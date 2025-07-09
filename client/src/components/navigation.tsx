@@ -39,16 +39,16 @@ export default function Navigation() {
           {!isMobile && (
             <div className="hidden md:flex items-center space-x-8">
               {navItems.map((item) => (
-                <Link key={item.href} href={item.href}>
-                  <a
-                    className={`transition-colors ${
-                      location === item.href
-                        ? "text-primary font-medium"
-                        : "text-gray-700 hover:text-primary"
-                    }`}
-                  >
-                    {item.label}
-                  </a>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`transition-colors ${
+                    location === item.href
+                      ? "text-primary font-medium"
+                      : "text-gray-700 hover:text-primary"
+                  }`}
+                >
+                  {item.label}
                 </Link>
               ))}
             </div>

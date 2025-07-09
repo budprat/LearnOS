@@ -20,47 +20,66 @@ export default function RecentCourses({ userCourses }: RecentCoursesProps) {
             {userCourses.map((userCourse: any) => (
               <div
                 key={userCourse.id}
-                className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors card-hover"
+                className="p-5 border border-gray-200 rounded-xl hover:shadow-md transition-all duration-200 card-polish animate-fade-in"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <BookOpen className="h-8 w-8 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-gray-900 truncate">
-                      {userCourse.course?.title || "Course Title"}
-                    </h3>
-                    <Badge variant="secondary" className="text-xs">
-                      {userCourse.course?.skillLevel || "Beginner"}
-                    </Badge>
+                <div className="flex items-start space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="h-7 w-7 text-primary" />
                   </div>
-                  <p className="text-sm text-gray-600 mb-2 line-clamp-1">
-                    {userCourse.course?.description || "Learn modern programming concepts and techniques"}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      <span className="text-xs text-gray-500">
-                        {userCourse.course?.estimatedDuration || 45} min
-                      </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 text-lg">
+                        {userCourse.course?.title || "Course Title"}
+                      </h3>
+                      <Badge 
+                        variant={userCourse.course?.skillLevel === 'Advanced' ? 'default' : 
+                                userCourse.course?.skillLevel === 'Intermediate' ? 'secondary' : 'outline'}
+                        className="text-xs"
+                      >
+                        {userCourse.course?.skillLevel || "Beginner"}
+                      </Badge>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
+                    
+                    {/* Progress bar with enhanced styling */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-600">
+                          {userCourse.completedLessons || 14} of {userCourse.totalLessons || 32} lessons
+                        </span>
+                        <span className="text-xs font-medium text-primary">
+                          {Math.round(userCourse.progress || 45)}% complete
+                        </span>
+                      </div>
+                      <div className="progress-enhanced h-2">
                         <div
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${userCourse.progress || 0}%` }}
+                          className="progress-bar h-full rounded-full transition-all duration-500"
+                          style={{ width: `${userCourse.progress || 45}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-500 font-medium">
-                        {Math.round(userCourse.progress || 0)}%
-                      </span>
                     </div>
+                    
+                    {/* Next lesson preview */}
+                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                      <p className="text-xs text-gray-500 mb-1">Next lesson:</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {userCourse.nextLesson || "Introduction to Advanced Concepts"}
+                      </p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-gray-400" />
+                          <span className="text-xs text-gray-500">
+                            {userCourse.nextLessonDuration || 45} min
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Button className="w-full" size="sm">
+                      <Play className="h-4 w-4 mr-2" />
+                      Continue Learning
+                    </Button>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="flex-shrink-0">
-                  <Play className="h-4 w-4 mr-1" />
-                  Continue
-                </Button>
               </div>
             ))}
           </div>

@@ -17,6 +17,7 @@ import FloatingAiAssistant from "@/components/floating-ai-assistant";
 import { Skeleton } from "@/components/ui/skeleton";
 import GamificationBadges from "@/components/gamification-badges";
 import LearningProgressVisualization from "@/components/learning-progress-visualization";
+import UpcomingEvents from "@/components/upcoming-events";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -126,9 +127,9 @@ export default function Dashboard() {
 
           {/* Sidebar */}
           <div className="space-y-8">
-            <AiTutorWidget />
             <ProgressStats user={dashboardData.user} />
-            <UpcomingAssessments assessments={dashboardData.assessments} />
+            <UpcomingEvents />
+            <AiTutorWidget />
             <StudyGroup studyGroups={dashboardData.studyGroups} />
           </div>
         </div>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, MessageSquare, Book, Plus, User } from "lucide-react";
+import { Users, MessageSquare, Book, Plus, User, Calendar, Award, TrendingUp, Clock, Star } from "lucide-react";
 
 export default function Community() {
   const { toast } = useToast();
@@ -69,207 +69,294 @@ export default function Community() {
           </Button>
         </div>
 
-        {/* Featured Study Groups */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="h-5 w-5 mr-2" />
-              Featured Study Groups
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant="secondary">JavaScript</Badge>
-                  <Badge variant="outline">15 members</Badge>
+        {/* Community Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className="card-polish animate-fade-in">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Active Groups</p>
+                  <p className="text-2xl font-bold text-gray-900">24</p>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">JavaScript Fundamentals</h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  Learn JavaScript basics together with daily challenges and group discussions.
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex -space-x-2">
-                    <Avatar className="h-6 w-6 border-2 border-white">
-                      <AvatarFallback className="text-xs">J</AvatarFallback>
-                    </Avatar>
-                    <Avatar className="h-6 w-6 border-2 border-white">
-                      <AvatarFallback className="text-xs">M</AvatarFallback>
-                    </Avatar>
-                    <Avatar className="h-6 w-6 border-2 border-white">
-                      <AvatarFallback className="text-xs">S</AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    Join Group
-                  </Button>
-                </div>
+                <Users className="h-8 w-8 text-primary" />
               </div>
-
-              <div className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant="secondary">React</Badge>
-                  <Badge variant="outline">22 members</Badge>
+            </CardContent>
+          </Card>
+          
+          <Card className="card-polish animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total Members</p>
+                  <p className="text-2xl font-bold text-gray-900">1,248</p>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">React Study Circle</h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  Advanced React concepts and best practices with hands-on projects.
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex -space-x-2">
-                    <Avatar className="h-6 w-6 border-2 border-white">
-                      <AvatarFallback className="text-xs">A</AvatarFallback>
-                    </Avatar>
-                    <Avatar className="h-6 w-6 border-2 border-white">
-                      <AvatarFallback className="text-xs">B</AvatarFallback>
-                    </Avatar>
-                    <Avatar className="h-6 w-6 border-2 border-white">
-                      <AvatarFallback className="text-xs">C</AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    Join Group
-                  </Button>
-                </div>
+                <User className="h-8 w-8 text-success" />
               </div>
-
-              <div className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant="secondary">Python</Badge>
-                  <Badge variant="outline">18 members</Badge>
+            </CardContent>
+          </Card>
+          
+          <Card className="card-polish animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Discussions</p>
+                  <p className="text-2xl font-bold text-gray-900">3,847</p>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Python for Data Science</h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  Learn Python for data analysis and machine learning applications.
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex -space-x-2">
-                    <Avatar className="h-6 w-6 border-2 border-white">
-                      <AvatarFallback className="text-xs">D</AvatarFallback>
-                    </Avatar>
-                    <Avatar className="h-6 w-6 border-2 border-white">
-                      <AvatarFallback className="text-xs">E</AvatarFallback>
-                    </Avatar>
-                    <Avatar className="h-6 w-6 border-2 border-white">
-                      <AvatarFallback className="text-xs">F</AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    Join Group
-                  </Button>
-                </div>
+                <MessageSquare className="h-8 w-8 text-accent" />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+          
+          <Card className="card-polish animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Study Sessions</p>
+                  <p className="text-2xl font-bold text-gray-900">156</p>
+                </div>
+                <Calendar className="h-8 w-8 text-secondary" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* All Study Groups */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Card>
+          {/* Featured Study Groups */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="card-polish animate-fade-in">
               <CardHeader>
-                <CardTitle>All Study Groups</CardTitle>
+                <CardTitle className="flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  Featured Study Groups
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {studyGroups && studyGroups.length > 0 ? (
-                  <div className="space-y-4">
-                    {studyGroups.map((group: any) => (
-                      <div key={group.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                        <div className="flex items-center space-x-4">
-                          <Avatar>
-                            <AvatarFallback>
-                              <Users className="h-4 w-4" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{group.name}</h3>
-                            <p className="text-sm text-gray-600">{group.description}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge variant="outline" className="text-xs">
-                                {group.memberCount} members
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                Active
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          Join
-                        </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="group p-4 border rounded-lg hover:shadow-lg transition-all card-polish">
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge variant="secondary">JavaScript</Badge>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Users className="h-3 w-3" />
+                        15 members
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No study groups available
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">
+                      JavaScript Fundamentals
                     </h3>
-                    <p className="text-gray-600 mb-4">
-                      Be the first to create a study group and start learning together!
+                    <p className="text-sm text-gray-600 mb-3">
+                      Learn JavaScript basics together with daily challenges and group discussions.
                     </p>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create First Group
-                    </Button>
+                    <div className="flex items-center mb-3">
+                      <div className="flex -space-x-2 mr-3">
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-blue-100 text-blue-700">J</AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-green-100 text-green-700">M</AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-purple-100 text-purple-700">S</AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <span className="text-xs text-gray-500">+12 others</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <TrendingUp className="h-3 w-3 text-green-500" />
+                        <span>Active now</span>
+                      </div>
+                      <Button size="sm" className="group-hover:bg-primary group-hover:text-white">
+                        Join Group
+                      </Button>
+                    </div>
                   </div>
-                )}
+
+                  <div className="group p-4 border rounded-lg hover:shadow-lg transition-all card-polish">
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge variant="secondary">React</Badge>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Users className="h-3 w-3" />
+                        22 members
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">
+                      React Study Circle
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Advanced React concepts and best practices with hands-on projects.
+                    </p>
+                    <div className="flex items-center mb-3">
+                      <div className="flex -space-x-2 mr-3">
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-orange-100 text-orange-700">A</AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-pink-100 text-pink-700">B</AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-indigo-100 text-indigo-700">C</AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <span className="text-xs text-gray-500">+19 others</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Star className="h-3 w-3 text-yellow-500" />
+                        <span>Popular</span>
+                      </div>
+                      <Button size="sm" className="group-hover:bg-primary group-hover:text-white">
+                        Join Group
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="group p-4 border rounded-lg hover:shadow-lg transition-all card-polish">
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge variant="secondary">Python</Badge>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Users className="h-3 w-3" />
+                        18 members
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">
+                      Python for Data Science
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Learn Python for data analysis and machine learning applications.
+                    </p>
+                    <div className="flex items-center mb-3">
+                      <div className="flex -space-x-2 mr-3">
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-red-100 text-red-700">D</AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-teal-100 text-teal-700">E</AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-cyan-100 text-cyan-700">F</AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <span className="text-xs text-gray-500">+15 others</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Clock className="h-3 w-3 text-blue-500" />
+                        <span>Next session: Today</span>
+                      </div>
+                      <Button size="sm" className="group-hover:bg-primary group-hover:text-white">
+                        Join Group
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="group p-4 border rounded-lg hover:shadow-lg transition-all card-polish">
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge variant="secondary">Math</Badge>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Users className="h-3 w-3" />
+                        12 members
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-primary transition-colors">
+                      Calculus Preparation
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Master calculus concepts with practice problems and peer support.
+                    </p>
+                    <div className="flex items-center mb-3">
+                      <div className="flex -space-x-2 mr-3">
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-amber-100 text-amber-700">G</AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-lime-100 text-lime-700">H</AvatarFallback>
+                        </Avatar>
+                        <Avatar className="h-6 w-6 border-2 border-white">
+                          <AvatarFallback className="text-xs bg-yellow-100 text-yellow-700">I</AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <span className="text-xs text-gray-500">+9 others</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Award className="h-3 w-3 text-purple-500" />
+                        <span>New group</span>
+                      </div>
+                      <Button size="sm" className="group-hover:bg-primary group-hover:text-white">
+                        Join Group
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <Card>
+            {/* Leaderboard */}
+            <Card className="card-polish animate-fade-in">
               <CardHeader>
-                <CardTitle>Community Stats</CardTitle>
+                <CardTitle className="flex items-center">
+                  <Award className="h-5 w-5 mr-2" />
+                  This Week's Top Learners
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Total Members</span>
-                  <span className="font-semibold">2,847</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Active Groups</span>
-                  <span className="font-semibold">42</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Daily Discussions</span>
-                  <span className="font-semibold">156</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Study Sessions</span>
-                  <span className="font-semibold">89</span>
-                </div>
+              <CardContent className="space-y-3">
+                {[
+                  { name: 'Sarah Johnson', points: 1450, change: '+120', rank: 1 },
+                  { name: 'Mike Chen', points: 1380, change: '+95', rank: 2 },
+                  { name: 'Emma Davis', points: 1290, change: '+80', rank: 3 },
+                  { name: 'Alex Kim', points: 1220, change: '+75', rank: 4 },
+                  { name: 'You', points: 1150, change: '+65', rank: 5, isCurrentUser: true }
+                ].map((learner, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between p-3 rounded-lg ${
+                      learner.isCurrentUser ? 'bg-primary/10 border border-primary/20' : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        learner.rank === 1 ? 'bg-yellow-400 text-white' :
+                        learner.rank === 2 ? 'bg-gray-300 text-gray-700' :
+                        learner.rank === 3 ? 'bg-orange-400 text-white' :
+                        'bg-gray-200 text-gray-600'
+                      }`}>
+                        {learner.rank}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{learner.name}</p>
+                        <p className="text-xs text-gray-500">{learner.points} points</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-green-600 font-medium">{learner.change}</span>
+                  </div>
+                ))}
               </CardContent>
             </Card>
 
-            <Card>
+            {/* Upcoming Events */}
+            <Card className="card-polish animate-fade-in">
               <CardHeader>
-                <CardTitle>Popular Topics</CardTitle>
+                <CardTitle className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  Upcoming Sessions
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">JavaScript</Badge>
-                  <span className="text-sm text-gray-500">12 groups</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">React</Badge>
-                  <span className="text-sm text-gray-500">8 groups</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">Python</Badge>
-                  <span className="text-sm text-gray-500">6 groups</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">Data Science</Badge>
-                  <span className="text-sm text-gray-500">5 groups</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">Machine Learning</Badge>
-                  <span className="text-sm text-gray-500">4 groups</span>
-                </div>
+                {[
+                  { title: 'JavaScript Q&A', time: 'Today, 3:00 PM', group: 'JS Fundamentals' },
+                  { title: 'React Hooks Workshop', time: 'Tomorrow, 2:00 PM', group: 'React Circle' },
+                  { title: 'Python Study Group', time: 'Wed, 4:00 PM', group: 'Python DS' },
+                  { title: 'Math Problem Solving', time: 'Thu, 5:00 PM', group: 'Calculus Prep' }
+                ].map((event, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                    <p className="text-sm font-medium text-gray-900">{event.title}</p>
+                    <p className="text-xs text-gray-500 mt-1">{event.time}</p>
+                    <p className="text-xs text-primary mt-1">{event.group}</p>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </div>
