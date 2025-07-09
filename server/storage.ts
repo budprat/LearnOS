@@ -47,7 +47,7 @@ import { eq, desc, and, sql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
-  // User operations (IMPORTANT: mandatory for Replit Auth)
+  // User operations (IMPORTANT: mandatory for Supabase Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserStats(userId: string, stats: Partial<User>): Promise<User>;
@@ -117,7 +117,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (IMPORTANT: mandatory for Replit Auth)
+  // User operations (IMPORTANT: mandatory for Supabase Auth)
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;

@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useState } from "react";
+import { Link, useLocation } from "wouter";
 
 export default function Landing() {
   const [aiMessage, setAiMessage] = useState("");
@@ -52,9 +53,11 @@ export default function Landing() {
               <GraduationCap className="h-8 w-8 text-primary mr-3" />
               <span className="text-xl font-bold text-gray-900">LearnAI</span>
             </div>
-            <Button onClick={() => window.location.href = '/api/login'}>
-              Get Started
-            </Button>
+            <Link href="/auth">
+              <Button>
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>
