@@ -27,9 +27,13 @@ export default function AuthPage() {
   useEffect(() => {
     // Check if user is already logged in
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setLocation('/dashboard');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setLocation('/dashboard');
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
       }
     };
     checkAuth();
@@ -56,8 +60,20 @@ export default function AuthPage() {
       return;
     }
 
+    if (formData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Attempting sign up with:', formData.email);
+      
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -68,12 +84,21 @@ export default function AuthPage() {
         }
       });
 
+      console.log('Sign up response:', { data, error });
+
       if (error) throw error;
 
-      toast({
-        title: "Success!",
-        description: "Please check your email to confirm your account."
-      });
+      if (data.user && !data.user.email_confirmed_at) {
+        toast({
+          title: "Success!",
+          description: "Please check your email to confirm your account."
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: "Account created successfully. You can now sign in."
+        });
+      }
 
       setFormData({
         email: '',
@@ -84,9 +109,10 @@ export default function AuthPage() {
       });
 
     } catch (error: any) {
+      console.error('Sign up error:', error);
       toast({
         title: "Sign Up Error",
-        description: error.message,
+        description: error.message || "An error occurred during sign up",
         variant: "destructive"
       });
     } finally {
@@ -99,10 +125,14 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting sign in with:', formData.email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password
       });
+
+      console.log('Sign in response:', { data, error });
 
       if (error) throw error;
 
@@ -114,9 +144,10 @@ export default function AuthPage() {
       setLocation('/dashboard');
 
     } catch (error: any) {
+      console.error('Sign in error:', error);
       toast({
         title: "Login Error",
-        description: error.message,
+        description: error.message || "An error occurred during sign in",
         variant: "destructive"
       });
     } finally {
