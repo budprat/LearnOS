@@ -93,6 +93,15 @@ const defaultAchievements: Achievement[] = [
   }
 ];
 
+const iconMap: Record<string, React.ComponentType<any>> = {
+  '1': Star,
+  '2': Flame,
+  '3': Trophy,
+  '4': Crown,
+  '5': Zap,
+  '6': Medal
+};
+
 export default function GamificationBadges({ 
   achievements = defaultAchievements, 
   streak = 0, 
@@ -101,6 +110,12 @@ export default function GamificationBadges({
 }: GamificationBadgesProps) {
   const nextLevelPoints = level * 1000;
   const currentLevelProgress = (totalPoints % 1000) / 10;
+  
+  // Map icons to achievements from API
+  const achievementsWithIcons = achievements.map(achievement => ({
+    ...achievement,
+    icon: iconMap[achievement.id] || Trophy
+  }));
 
   return (
     <div className="space-y-6">
@@ -166,7 +181,7 @@ export default function GamificationBadges({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {achievements.map((achievement, index) => {
+            {achievementsWithIcons.map((achievement, index) => {
               const Icon = achievement.icon;
               const isUnlocked = achievement.unlocked;
               const progress = (achievement.progress / achievement.total) * 100;
