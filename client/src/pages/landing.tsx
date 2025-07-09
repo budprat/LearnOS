@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GraduationCap, Brain, TrendingUp, Users, BarChart3, Clock, Award, CheckCircle, ArrowRight, Sparkles, Shield, Target, Globe, Zap, Calendar, MessageSquare, BookOpen, Play, Volume2, Mic, Send, ChevronRight, Star, Trophy, Target as TargetIcon } from "lucide-react";
-import HeroIllustration from "@/components/hero-illustration";
+import PlatformScreenshot from "@/components/platform-screenshot";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -132,8 +132,8 @@ export default function Landing() {
           
           <div className="relative animate-scale-in">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 blur-3xl"></div>
-            <div className="relative glass-effect rounded-2xl p-8">
-              <HeroIllustration />
+            <div className="relative">
+              <PlatformScreenshot />
             </div>
           </div>
         </div>

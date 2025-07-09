@@ -403,9 +403,9 @@ export class DatabaseStorage implements IStorage {
         videoUrl: lesson.videoUrl,
         duration: lesson.duration,
         difficulty: lesson.difficulty,
-        topics: lesson.topics || [],
-        prerequisites: lesson.prerequisites || [],
-        learningObjectives: lesson.learningObjectives || [],
+        topics: lesson.topics,
+        prerequisites: lesson.prerequisites,
+        learningObjectives: lesson.learningObjectives,
         interactiveElements: lesson.interactiveElements,
         assessments: lesson.assessments,
         resources: lesson.resources,
@@ -439,10 +439,10 @@ export class DatabaseStorage implements IStorage {
       .values({
         userId: progress.userId,
         lessonId: progress.lessonId,
-        progress: progress.progress || 0,
-        timeSpent: progress.timeSpent || 0,
-        completedSections: progress.completedSections || [],
-        lastPosition: progress.lastPosition || 0,
+        progress: progress.progress,
+        timeSpent: progress.timeSpent,
+        completedSections: progress.completedSections,
+        lastPosition: progress.lastPosition,
       })
       .returning();
     return newProgress;
@@ -474,7 +474,7 @@ export class DatabaseStorage implements IStorage {
         lessonId: note.lessonId,
         content: note.content,
         position: note.position,
-        highlighted: note.highlighted || false,
+        highlighted: note.highlighted,
       })
       .returning();
     return newNote;
