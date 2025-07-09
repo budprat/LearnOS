@@ -133,3 +133,21 @@ Preferred communication style: Simple, everyday language.
 - **Sessions**: PostgreSQL-backed for horizontal scaling
 - **AI Requests**: Rate limiting and caching strategies
 - **Static Assets**: CDN-ready build output
+
+## Recent Changes
+
+### Landing Page Overhaul (Latest - July 2025)
+- **Today's Learning Section**: Added daily goals with progress tracking and lesson status indicators
+- **Weekly Activity Chart**: Interactive line chart showing learning hours and completion trends
+- **Upcoming Events Preview**: Color-coded event types with scheduling information
+- **AI Insights Section**: Personalized recommendations based on learning patterns
+- **Learning Analytics Preview**: Progress tracking with trend indicators for different subjects
+- **Interactive AI Tutor Demo**: Quick action buttons and chat interface for platform preview
+- **Enhanced Hero Section**: Trust indicators, improved CTAs, and platform statistics
+
+### Previous Platform Enhancements
+- Enhanced AI tutor with suggested questions and comprehensive sidebar
+- Overhauled analytics with interactive Recharts visualizations
+- Improved community page with polished study groups and leaderboard
+- Enhanced courses with filtering, search, and categories sidebar
+- Implemented professional visual polish throughout the platform
