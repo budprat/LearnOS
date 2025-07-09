@@ -11,6 +11,7 @@ import Courses from "@/pages/courses";
 import AiTutor from "@/pages/ai-tutor";
 import Analytics from "@/pages/analytics";
 import Community from "@/pages/community";
+import Lesson from "@/pages/lesson";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -23,6 +24,7 @@ function Router() {
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/courses" component={Courses} />
+          <Route path="/lesson/:id" component={Lesson} />
           <Route path="/ai-tutor" component={AiTutor} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/community" component={Community} />

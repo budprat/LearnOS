@@ -8,6 +8,11 @@ import {
   studyGroups,
   studyGroupMembers,
   aiTutorSessions,
+  lessons,
+  lessonProgress,
+  lessonNotes,
+  lessonBookmarks,
+  lessonAssessmentResults,
   type User,
   type UpsertUser,
   type Course,
@@ -26,6 +31,16 @@ import {
   type InsertStudyGroupMember,
   type AiTutorSession,
   type InsertAiTutorSession,
+  type Lesson,
+  type InsertLesson,
+  type LessonProgress,
+  type InsertLessonProgress,
+  type LessonNote,
+  type InsertLessonNote,
+  type LessonBookmark,
+  type InsertLessonBookmark,
+  type LessonAssessmentResult,
+  type InsertLessonAssessmentResult,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -73,6 +88,32 @@ export interface IStorage {
   getUserAiTutorSessions(userId: string): Promise<AiTutorSession[]>;
   createAiTutorSession(session: InsertAiTutorSession): Promise<AiTutorSession>;
   updateAiTutorSession(id: number, updates: Partial<AiTutorSession>): Promise<AiTutorSession>;
+  
+  // Lesson operations
+  getLessons(): Promise<Lesson[]>;
+  getLesson(id: number): Promise<Lesson | undefined>;
+  createLesson(lesson: InsertLesson): Promise<Lesson>;
+  updateLesson(id: number, updates: Partial<Lesson>): Promise<Lesson>;
+  
+  // Lesson progress operations
+  getUserLessonProgress(userId: string, lessonId: number): Promise<LessonProgress | undefined>;
+  createLessonProgress(progress: InsertLessonProgress): Promise<LessonProgress>;
+  updateLessonProgress(id: number, updates: Partial<LessonProgress>): Promise<LessonProgress>;
+  
+  // Lesson notes operations
+  getUserLessonNotes(userId: string, lessonId: number): Promise<LessonNote[]>;
+  createLessonNote(note: InsertLessonNote): Promise<LessonNote>;
+  updateLessonNote(id: number, updates: Partial<LessonNote>): Promise<LessonNote>;
+  deleteLessonNote(id: number): Promise<void>;
+  
+  // Lesson bookmarks operations
+  getUserLessonBookmarks(userId: string, lessonId: number): Promise<LessonBookmark[]>;
+  createLessonBookmark(bookmark: InsertLessonBookmark): Promise<LessonBookmark>;
+  deleteLessonBookmark(id: number): Promise<void>;
+  
+  // Lesson assessment results operations
+  getUserLessonAssessmentResults(userId: string, lessonId: number): Promise<LessonAssessmentResult[]>;
+  createLessonAssessmentResult(result: InsertLessonAssessmentResult): Promise<LessonAssessmentResult>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -340,6 +381,166 @@ export class DatabaseStorage implements IStorage {
       .where(eq(aiTutorSessions.id, id))
       .returning();
     return session;
+  }
+
+  // Lesson operations
+  async getLessons(): Promise<Lesson[]> {
+    return await db.select().from(lessons);
+  }
+
+  async getLesson(id: number): Promise<Lesson | undefined> {
+    const [lesson] = await db.select().from(lessons).where(eq(lessons.id, id));
+    return lesson;
+  }
+
+  async createLesson(lesson: InsertLesson): Promise<Lesson> {
+    const [newLesson] = await db
+      .insert(lessons)
+      .values({
+        title: lesson.title,
+        description: lesson.description,
+        content: lesson.content,
+        videoUrl: lesson.videoUrl,
+        duration: lesson.duration,
+        difficulty: lesson.difficulty,
+        topics: lesson.topics || [],
+        prerequisites: lesson.prerequisites || [],
+        learningObjectives: lesson.learningObjectives || [],
+        interactiveElements: lesson.interactiveElements,
+        assessments: lesson.assessments,
+        resources: lesson.resources,
+        courseId: lesson.courseId,
+      })
+      .returning();
+    return newLesson;
+  }
+
+  async updateLesson(id: number, updates: Partial<Lesson>): Promise<Lesson> {
+    const [lesson] = await db
+      .update(lessons)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(lessons.id, id))
+      .returning();
+    return lesson;
+  }
+
+  // Lesson progress operations
+  async getUserLessonProgress(userId: string, lessonId: number): Promise<LessonProgress | undefined> {
+    const [progress] = await db
+      .select()
+      .from(lessonProgress)
+      .where(and(eq(lessonProgress.userId, userId), eq(lessonProgress.lessonId, lessonId)));
+    return progress;
+  }
+
+  async createLessonProgress(progress: InsertLessonProgress): Promise<LessonProgress> {
+    const [newProgress] = await db
+      .insert(lessonProgress)
+      .values({
+        userId: progress.userId,
+        lessonId: progress.lessonId,
+        progress: progress.progress || 0,
+        timeSpent: progress.timeSpent || 0,
+        completedSections: progress.completedSections || [],
+        lastPosition: progress.lastPosition || 0,
+      })
+      .returning();
+    return newProgress;
+  }
+
+  async updateLessonProgress(id: number, updates: Partial<LessonProgress>): Promise<LessonProgress> {
+    const [progress] = await db
+      .update(lessonProgress)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(lessonProgress.id, id))
+      .returning();
+    return progress;
+  }
+
+  // Lesson notes operations
+  async getUserLessonNotes(userId: string, lessonId: number): Promise<LessonNote[]> {
+    return await db
+      .select()
+      .from(lessonNotes)
+      .where(and(eq(lessonNotes.userId, userId), eq(lessonNotes.lessonId, lessonId)))
+      .orderBy(lessonNotes.position);
+  }
+
+  async createLessonNote(note: InsertLessonNote): Promise<LessonNote> {
+    const [newNote] = await db
+      .insert(lessonNotes)
+      .values({
+        userId: note.userId,
+        lessonId: note.lessonId,
+        content: note.content,
+        position: note.position,
+        highlighted: note.highlighted || false,
+      })
+      .returning();
+    return newNote;
+  }
+
+  async updateLessonNote(id: number, updates: Partial<LessonNote>): Promise<LessonNote> {
+    const [note] = await db
+      .update(lessonNotes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(lessonNotes.id, id))
+      .returning();
+    return note;
+  }
+
+  async deleteLessonNote(id: number): Promise<void> {
+    await db.delete(lessonNotes).where(eq(lessonNotes.id, id));
+  }
+
+  // Lesson bookmarks operations
+  async getUserLessonBookmarks(userId: string, lessonId: number): Promise<LessonBookmark[]> {
+    return await db
+      .select()
+      .from(lessonBookmarks)
+      .where(and(eq(lessonBookmarks.userId, userId), eq(lessonBookmarks.lessonId, lessonId)))
+      .orderBy(lessonBookmarks.position);
+  }
+
+  async createLessonBookmark(bookmark: InsertLessonBookmark): Promise<LessonBookmark> {
+    const [newBookmark] = await db
+      .insert(lessonBookmarks)
+      .values({
+        userId: bookmark.userId,
+        lessonId: bookmark.lessonId,
+        title: bookmark.title,
+        position: bookmark.position,
+      })
+      .returning();
+    return newBookmark;
+  }
+
+  async deleteLessonBookmark(id: number): Promise<void> {
+    await db.delete(lessonBookmarks).where(eq(lessonBookmarks.id, id));
+  }
+
+  // Lesson assessment results operations
+  async getUserLessonAssessmentResults(userId: string, lessonId: number): Promise<LessonAssessmentResult[]> {
+    return await db
+      .select()
+      .from(lessonAssessmentResults)
+      .where(and(eq(lessonAssessmentResults.userId, userId), eq(lessonAssessmentResults.lessonId, lessonId)))
+      .orderBy(desc(lessonAssessmentResults.createdAt));
+  }
+
+  async createLessonAssessmentResult(result: InsertLessonAssessmentResult): Promise<LessonAssessmentResult> {
+    const [newResult] = await db
+      .insert(lessonAssessmentResults)
+      .values({
+        userId: result.userId,
+        lessonId: result.lessonId,
+        assessmentId: result.assessmentId,
+        score: result.score,
+        answers: result.answers,
+        timeSpent: result.timeSpent,
+      })
+      .returning();
+    return newResult;
   }
 }
 

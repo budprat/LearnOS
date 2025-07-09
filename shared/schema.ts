@@ -134,6 +134,68 @@ export const aiTutorSessions = pgTable("ai_tutor_sessions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const lessons = pgTable("lessons", {
+  id: serial("id").primaryKey(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  content: text("content").notNull(),
+  videoUrl: varchar("video_url"),
+  duration: integer("duration").notNull(), // in minutes
+  difficulty: varchar("difficulty").notNull(), // beginner, intermediate, advanced
+  topics: jsonb("topics").$type<string[]>(),
+  prerequisites: jsonb("prerequisites").$type<string[]>(),
+  learningObjectives: jsonb("learning_objectives").$type<string[]>(),
+  interactiveElements: jsonb("interactive_elements"),
+  assessments: jsonb("assessments"),
+  resources: jsonb("resources"),
+  courseId: integer("course_id").references(() => courses.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const lessonProgress = pgTable("lesson_progress", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  lessonId: integer("lesson_id").references(() => lessons.id).notNull(),
+  progress: integer("progress").default(0), // percentage
+  timeSpent: integer("time_spent").default(0), // in seconds
+  completedSections: jsonb("completed_sections").$type<string[]>(),
+  lastPosition: integer("last_position").default(0), // in seconds
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const lessonNotes = pgTable("lesson_notes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  lessonId: integer("lesson_id").references(() => lessons.id).notNull(),
+  content: text("content").notNull(),
+  position: integer("position").notNull(), // position in video/content
+  highlighted: boolean("highlighted").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const lessonBookmarks = pgTable("lesson_bookmarks", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  lessonId: integer("lesson_id").references(() => lessons.id).notNull(),
+  title: varchar("title").notNull(),
+  position: integer("position").notNull(), // position in video/content
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const lessonAssessmentResults = pgTable("lesson_assessment_results", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  lessonId: integer("lesson_id").references(() => lessons.id).notNull(),
+  assessmentId: varchar("assessment_id").notNull(),
+  score: integer("score").notNull(),
+  answers: jsonb("answers"),
+  timeSpent: integer("time_spent").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   userCourses: many(userCourses),
@@ -142,6 +204,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   recommendations: many(recommendations),
   studyGroupMembers: many(studyGroupMembers),
   aiTutorSessions: many(aiTutorSessions),
+  lessonProgress: many(lessonProgress),
+  lessonNotes: many(lessonNotes),
+  lessonBookmarks: many(lessonBookmarks),
+  lessonAssessmentResults: many(lessonAssessmentResults),
 }));
 
 export const coursesRelations = relations(courses, ({ many }) => ({
@@ -149,6 +215,7 @@ export const coursesRelations = relations(courses, ({ many }) => ({
   assessments: many(assessments),
   recommendations: many(recommendations),
   studyGroups: many(studyGroups),
+  lessons: many(lessons),
 }));
 
 export const learningPathsRelations = relations(learningPaths, ({ one }) => ({
@@ -217,6 +284,61 @@ export const aiTutorSessionsRelations = relations(aiTutorSessions, ({ one }) => 
   }),
 }));
 
+export const lessonsRelations = relations(lessons, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [lessons.courseId],
+    references: [courses.id],
+  }),
+  lessonProgress: many(lessonProgress),
+  lessonNotes: many(lessonNotes),
+  lessonBookmarks: many(lessonBookmarks),
+  lessonAssessmentResults: many(lessonAssessmentResults),
+}));
+
+export const lessonProgressRelations = relations(lessonProgress, ({ one }) => ({
+  user: one(users, {
+    fields: [lessonProgress.userId],
+    references: [users.id],
+  }),
+  lesson: one(lessons, {
+    fields: [lessonProgress.lessonId],
+    references: [lessons.id],
+  }),
+}));
+
+export const lessonNotesRelations = relations(lessonNotes, ({ one }) => ({
+  user: one(users, {
+    fields: [lessonNotes.userId],
+    references: [users.id],
+  }),
+  lesson: one(lessons, {
+    fields: [lessonNotes.lessonId],
+    references: [lessons.id],
+  }),
+}));
+
+export const lessonBookmarksRelations = relations(lessonBookmarks, ({ one }) => ({
+  user: one(users, {
+    fields: [lessonBookmarks.userId],
+    references: [users.id],
+  }),
+  lesson: one(lessons, {
+    fields: [lessonBookmarks.lessonId],
+    references: [lessons.id],
+  }),
+}));
+
+export const lessonAssessmentResultsRelations = relations(lessonAssessmentResults, ({ one }) => ({
+  user: one(users, {
+    fields: [lessonAssessmentResults.userId],
+    references: [users.id],
+  }),
+  lesson: one(lessons, {
+    fields: [lessonAssessmentResults.lessonId],
+    references: [lessons.id],
+  }),
+}));
+
 // Export schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -268,6 +390,34 @@ export const insertAiTutorSessionSchema = createInsertSchema(aiTutorSessions).om
   updatedAt: true,
 });
 
+export const insertLessonSchema = createInsertSchema(lessons).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLessonProgressSchema = createInsertSchema(lessonProgress).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLessonNoteSchema = createInsertSchema(lessonNotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLessonBookmarkSchema = createInsertSchema(lessonBookmarks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertLessonAssessmentResultSchema = createInsertSchema(lessonAssessmentResults).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Export types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -287,3 +437,18 @@ export type StudyGroupMember = typeof studyGroupMembers.$inferSelect;
 export type InsertStudyGroupMember = z.infer<typeof insertStudyGroupMemberSchema>;
 export type AiTutorSession = typeof aiTutorSessions.$inferSelect;
 export type InsertAiTutorSession = z.infer<typeof insertAiTutorSessionSchema>;
+
+export type Lesson = typeof lessons.$inferSelect;
+export type InsertLesson = z.infer<typeof insertLessonSchema>;
+
+export type LessonProgress = typeof lessonProgress.$inferSelect;
+export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
+
+export type LessonNote = typeof lessonNotes.$inferSelect;
+export type InsertLessonNote = z.infer<typeof insertLessonNoteSchema>;
+
+export type LessonBookmark = typeof lessonBookmarks.$inferSelect;
+export type InsertLessonBookmark = z.infer<typeof insertLessonBookmarkSchema>;
+
+export type LessonAssessmentResult = typeof lessonAssessmentResults.$inferSelect;
+export type InsertLessonAssessmentResult = z.infer<typeof insertLessonAssessmentResultSchema>;

@@ -15,8 +15,10 @@ import {
   insertUserCourseSchema,
   insertAssessmentSchema,
   insertStudyGroupSchema,
-  insertAiTutorSessionSchema
+  insertAiTutorSessionSchema,
+  lessons
 } from "@shared/schema";
+import { db } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -31,6 +33,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Seed lessons API endpoint
+  app.post('/api/seed/lessons', isAuthenticated, async (req, res) => {
+    try {
+      const sampleLessons = [
+        {
+          title: "Introduction to Machine Learning",
+          description: "Learn the fundamentals of machine learning and its applications",
+          content: "Machine learning is a subset of artificial intelligence (AI) that enables computers to learn and make decisions without being explicitly programmed. In this lesson, we'll explore the core concepts and applications of machine learning.",
+          videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+          duration: 45,
+          difficulty: "beginner",
+          topics: ["AI", "Machine Learning", "Data Science"],
+          prerequisites: ["Basic Programming", "Statistics"],
+          learningObjectives: ["Understand ML concepts", "Learn ML types", "Explore applications"],
+          interactiveElements: {
+            exercises: [
+              { type: "multiple-choice", question: "What is machine learning?", options: ["A subset of AI", "A programming language", "A database"] }
+            ]
+          },
+          assessments: {
+            quiz: [
+              { type: "multiple-choice", question: "What is supervised learning?", options: ["Learning with labeled data", "Learning without data", "Learning with unlabeled data"] }
+            ]
+          },
+          resources: {
+            links: ["https://example.com/ml-intro", "https://example.com/ml-guide"],
+            books: ["Machine Learning Yearning", "Pattern Recognition"]
+          }
+        },
+        {
+          title: "Data Structures and Algorithms",
+          description: "Master essential data structures and algorithms for programming",
+          content: "Data structures and algorithms form the foundation of computer science and programming. This lesson covers arrays, linked lists, stacks, queues, trees, and graphs, along with sorting and searching algorithms.",
+          videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+          duration: 60,
+          difficulty: "intermediate",
+          topics: ["Data Structures", "Algorithms", "Programming"],
+          prerequisites: ["Programming Fundamentals", "Basic Math"],
+          learningObjectives: ["Understand data structures", "Implement algorithms", "Analyze complexity"],
+          interactiveElements: {
+            exercises: [
+              { type: "coding", question: "Implement a binary search algorithm", template: "function binarySearch(arr, target) { // Your code here }" }
+            ]
+          },
+          assessments: {
+            quiz: [
+              { type: "multiple-choice", question: "What is the time complexity of binary search?", options: ["O(log n)", "O(n)", "O(n²)"] }
+            ]
+          },
+          resources: {
+            links: ["https://example.com/dsa-guide", "https://example.com/algorithms"],
+            books: ["Introduction to Algorithms", "Data Structures and Algorithms"]
+          }
+        },
+        {
+          title: "Web Development with React",
+          description: "Build modern web applications using React framework",
+          content: "React is a popular JavaScript library for building user interfaces. In this lesson, we'll learn React fundamentals including components, props, state, and hooks to create interactive web applications.",
+          videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+          duration: 90,
+          difficulty: "intermediate",
+          topics: ["React", "JavaScript", "Web Development"],
+          prerequisites: ["HTML", "CSS", "JavaScript"],
+          learningObjectives: ["Create React components", "Manage state", "Build interactive UIs"],
+          interactiveElements: {
+            exercises: [
+              { type: "coding", question: "Create a React component", template: "import React from 'react'; function MyComponent() { // Your code here }" }
+            ]
+          },
+          assessments: {
+            quiz: [
+              { type: "multiple-choice", question: "What is JSX?", options: ["JavaScript XML", "Java Syntax Extension", "JSON XML"] }
+            ]
+          },
+          resources: {
+            links: ["https://reactjs.org/docs", "https://example.com/react-guide"],
+            books: ["Learning React", "React: The Complete Guide"]
+          }
+        }
+      ];
+
+      // Insert lessons using direct database queries
+      for (const lesson of sampleLessons) {
+        await db.insert(lessons).values(lesson);
+      }
+
+      res.json({ message: "Sample lessons created successfully", count: sampleLessons.length });
+    } catch (error) {
+      console.error("Error seeding lessons:", error);
+      res.status(500).json({ message: "Failed to seed lessons" });
     }
   });
 
@@ -538,6 +633,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching achievements:", error);
       res.status(500).json({ message: "Failed to fetch achievements" });
+    }
+  });
+
+  // Lesson routes
+  app.get('/api/lessons', isAuthenticated, async (req, res) => {
+    try {
+      const lessons = await storage.getLessons();
+      res.json(lessons);
+    } catch (error) {
+      console.error("Error fetching lessons:", error);
+      res.status(500).json({ message: "Failed to fetch lessons" });
+    }
+  });
+
+  app.get('/api/lessons/:id', isAuthenticated, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.id);
+      const lesson = await storage.getLesson(lessonId);
+      if (!lesson) {
+        return res.status(404).json({ message: "Lesson not found" });
+      }
+      res.json(lesson);
+    } catch (error) {
+      console.error("Error fetching lesson:", error);
+      res.status(500).json({ message: "Failed to fetch lesson" });
+    }
+  });
+
+  app.post('/api/lessons/:id/progress', isAuthenticated, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.id);
+      const userId = (req as any).user?.claims?.sub;
+      
+      // Check if progress already exists
+      const existingProgress = await storage.getUserLessonProgress(userId, lessonId);
+      if (existingProgress) {
+        const updatedProgress = await storage.updateLessonProgress(existingProgress.id, req.body);
+        res.json(updatedProgress);
+      } else {
+        const progress = await storage.createLessonProgress({
+          ...req.body,
+          userId,
+          lessonId
+        });
+        res.status(201).json(progress);
+      }
+    } catch (error) {
+      console.error("Error updating lesson progress:", error);
+      res.status(500).json({ message: "Failed to update lesson progress" });
+    }
+  });
+
+  app.get('/api/lessons/:id/progress', isAuthenticated, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.id);
+      const userId = (req as any).user?.claims?.sub;
+      const progress = await storage.getUserLessonProgress(userId, lessonId);
+      res.json(progress);
+    } catch (error) {
+      console.error("Error fetching lesson progress:", error);
+      res.status(500).json({ message: "Failed to fetch lesson progress" });
+    }
+  });
+
+  app.get('/api/lessons/:id/notes', isAuthenticated, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.id);
+      const userId = (req as any).user?.claims?.sub;
+      const notes = await storage.getUserLessonNotes(userId, lessonId);
+      res.json(notes);
+    } catch (error) {
+      console.error("Error fetching lesson notes:", error);
+      res.status(500).json({ message: "Failed to fetch lesson notes" });
+    }
+  });
+
+  app.post('/api/lessons/:id/notes', isAuthenticated, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.id);
+      const userId = (req as any).user?.claims?.sub;
+      const note = await storage.createLessonNote({
+        ...req.body,
+        userId,
+        lessonId
+      });
+      res.status(201).json(note);
+    } catch (error) {
+      console.error("Error creating lesson note:", error);
+      res.status(500).json({ message: "Failed to create lesson note" });
+    }
+  });
+
+  app.delete('/api/lessons/:id/notes/:noteId', isAuthenticated, async (req, res) => {
+    try {
+      const noteId = parseInt(req.params.noteId);
+      await storage.deleteLessonNote(noteId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting lesson note:", error);
+      res.status(500).json({ message: "Failed to delete lesson note" });
+    }
+  });
+
+  app.get('/api/lessons/:id/bookmarks', isAuthenticated, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.id);
+      const userId = (req as any).user?.claims?.sub;
+      const bookmarks = await storage.getUserLessonBookmarks(userId, lessonId);
+      res.json(bookmarks);
+    } catch (error) {
+      console.error("Error fetching lesson bookmarks:", error);
+      res.status(500).json({ message: "Failed to fetch lesson bookmarks" });
+    }
+  });
+
+  app.post('/api/lessons/:id/bookmarks', isAuthenticated, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.id);
+      const userId = (req as any).user?.claims?.sub;
+      const bookmark = await storage.createLessonBookmark({
+        ...req.body,
+        userId,
+        lessonId
+      });
+      res.status(201).json(bookmark);
+    } catch (error) {
+      console.error("Error creating lesson bookmark:", error);
+      res.status(500).json({ message: "Failed to create lesson bookmark" });
+    }
+  });
+
+  app.delete('/api/lessons/:id/bookmarks/:bookmarkId', isAuthenticated, async (req, res) => {
+    try {
+      const bookmarkId = parseInt(req.params.bookmarkId);
+      await storage.deleteLessonBookmark(bookmarkId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting lesson bookmark:", error);
+      res.status(500).json({ message: "Failed to delete lesson bookmark" });
     }
   });
 
