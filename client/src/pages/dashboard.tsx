@@ -15,6 +15,8 @@ import StudyGroup from "@/components/study-group";
 import QuickAccess from "@/components/quick-access";
 import FloatingAiAssistant from "@/components/floating-ai-assistant";
 import { Skeleton } from "@/components/ui/skeleton";
+import GamificationBadges from "@/components/gamification-badges";
+import LearningProgressVisualization from "@/components/learning-progress-visualization";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -37,6 +39,11 @@ export default function Dashboard() {
 
   const { data: dashboardData, isLoading: isDashboardLoading } = useQuery({
     queryKey: ['/api/dashboard'],
+    retry: false,
+  });
+
+  const { data: gamificationData, isLoading: isGamificationLoading } = useQuery({
+    queryKey: ['/api/gamification/achievements'],
     retry: false,
   });
 
@@ -93,6 +100,25 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Progress Visualization */}
+            <LearningProgressVisualization 
+              overallProgress={
+                dashboardData.userCourses.length > 0 
+                  ? Math.round(dashboardData.userCourses.reduce((acc: number, uc: any) => acc + (uc.progress || 0), 0) / dashboardData.userCourses.length)
+                  : 0
+              }
+            />
+            
+            {/* Gamification */}
+            {gamificationData && (
+              <GamificationBadges 
+                achievements={gamificationData.achievements}
+                streak={gamificationData.streak}
+                totalPoints={gamificationData.totalPoints}
+                level={gamificationData.level}
+              />
+            )}
+            
             <LearningPath learningPaths={dashboardData.learningPaths} />
             <AiRecommendations recommendations={dashboardData.recommendations} />
             <RecentCourses userCourses={dashboardData.userCourses} />

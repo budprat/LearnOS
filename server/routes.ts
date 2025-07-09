@@ -401,6 +401,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Advanced AI endpoints
+  app.post("/api/ai/detect-learning-style", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { interactionHistory = [], coursePreferences = [] } = req.body;
+      
+      const { detectLearningStyle } = await import("./openai");
+      const learningStyle = await detectLearningStyle(userId, interactionHistory, coursePreferences);
+      
+      res.json({ learningStyle });
+    } catch (error) {
+      console.error("Error detecting learning style:", error);
+      res.status(500).json({ message: "Failed to detect learning style" });
+    }
+  });
+
+  app.post("/api/ai/analyze-sentiment", isAuthenticated, async (req: any, res) => {
+    try {
+      const { messages = [], context = {} } = req.body;
+      
+      const { analyzeSentiment } = await import("./openai");
+      const emotionalState = await analyzeSentiment(messages, context);
+      
+      res.json({ emotionalState });
+    } catch (error) {
+      console.error("Error analyzing sentiment:", error);
+      res.status(500).json({ message: "Failed to analyze sentiment" });
+    }
+  });
+
+  app.post("/api/ai/generate-adaptive-questions", isAuthenticated, async (req: any, res) => {
+    try {
+      const { topic, userLevel, previousAnswers = [], learningObjectives = [] } = req.body;
+      
+      const { generateAdaptiveQuestions } = await import("./openai");
+      const questions = await generateAdaptiveQuestions(topic, userLevel, previousAnswers, learningObjectives);
+      
+      res.json(questions);
+    } catch (error) {
+      console.error("Error generating adaptive questions:", error);
+      res.status(500).json({ message: "Failed to generate questions" });
+    }
+  });
+
+  app.post("/api/ai/predict-intervention", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { progressData = {}, engagementMetrics = {}, assessmentHistory = [] } = req.body;
+      
+      const { predictLearningIntervention } = await import("./openai");
+      const intervention = await predictLearningIntervention(userId, progressData, engagementMetrics, assessmentHistory);
+      
+      res.json(intervention);
+    } catch (error) {
+      console.error("Error predicting intervention:", error);
+      res.status(500).json({ message: "Failed to predict intervention" });
+    }
+  });
+
+  app.get("/api/ai/competency-map", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const targetRole = req.query.targetRole as string;
+      
+      const userCourses = await storage.getUserCourses(userId);
+      const assessments = await storage.getUserAssessments(userId);
+      const completedCourses = userCourses
+        .filter(uc => uc.completedAt)
+        .map(uc => uc.course);
+      
+      const { mapCompetencies } = await import("./openai");
+      const competencyMap = await mapCompetencies(userId, completedCourses, assessments, targetRole);
+      
+      res.json(competencyMap);
+    } catch (error) {
+      console.error("Error mapping competencies:", error);
+      res.status(500).json({ message: "Failed to map competencies" });
+    }
+  });
+
+  // Gamification endpoints
+  app.get("/api/gamification/achievements", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      const userCourses = await storage.getUserCourses(userId);
+      const assessments = await storage.getUserAssessments(userId);
+      
+      // Calculate achievements based on user progress
+      const achievements = [
+        {
+          id: '1',
+          title: 'First Steps',
+          description: 'Complete your first course',
+          progress: userCourses.filter(uc => uc.completedAt).length,
+          total: 1,
+          unlocked: userCourses.some(uc => uc.completedAt),
+          rarity: 'common'
+        },
+        {
+          id: '2',
+          title: 'Dedicated Learner',
+          description: 'Maintain a 7-day learning streak',
+          progress: user?.currentStreak || 0,
+          total: 7,
+          unlocked: (user?.currentStreak || 0) >= 7,
+          rarity: 'rare'
+        },
+        {
+          id: '3',
+          title: 'Knowledge Seeker',
+          description: 'Complete 10 courses',
+          progress: userCourses.filter(uc => uc.completedAt).length,
+          total: 10,
+          unlocked: userCourses.filter(uc => uc.completedAt).length >= 10,
+          rarity: 'epic'
+        },
+        {
+          id: '4',
+          title: 'Master Mind',
+          description: 'Achieve 90% or higher on 5 assessments',
+          progress: assessments.filter(a => a.score && a.score >= 90).length,
+          total: 5,
+          unlocked: assessments.filter(a => a.score && a.score >= 90).length >= 5,
+          rarity: 'legendary'
+        }
+      ];
+      
+      res.json({
+        achievements,
+        streak: user?.currentStreak || 0,
+        totalPoints: user?.totalXp || 0,
+        level: Math.floor((user?.totalXp || 0) / 1000) + 1
+      });
+    } catch (error) {
+      console.error("Error fetching achievements:", error);
+      res.status(500).json({ message: "Failed to fetch achievements" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket setup for real-time features

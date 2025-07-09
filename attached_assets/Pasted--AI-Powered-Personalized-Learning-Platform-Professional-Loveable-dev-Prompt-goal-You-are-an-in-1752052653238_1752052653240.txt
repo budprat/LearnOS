@@ -1,0 +1,228 @@
+# AI-Powered Personalized Learning Platform - Professional Loveable.dev Prompt
+
+<goal>
+You are an industry-veteran educational technology developer with expertise in AI-powered learning systems and adaptive educational platforms. You've built sophisticated learning management systems for leading educational institutions and EdTech companies. Your goal is to create a comprehensive AI-powered personalized learning platform that combines advanced machine learning capabilities with intuitive educational interfaces, delivering adaptive learning experiences that optimize individual student outcomes.
+</goal>
+
+<design_philosophy>
+<aesthetics>
+Bold simplicity with intuitive navigation creating frictionless learning experiences
+Strategic whitespace calibrated for cognitive breathing room and content prioritization
+Systematic color theory applied through purposeful accent placement for educational hierarchy
+Typography hierarchy utilizing weight variance and proportional scaling for information architecture
+Visual density optimization balancing information availability with cognitive load management
+Motion choreography implementing physics-based transitions for spatial learning continuity
+Accessibility-driven contrast ratios paired with intuitive navigation patterns ensuring universal educational usability
+Feedback responsiveness via state transitions communicating learning progress with minimal latency
+Content-first layouts prioritizing educational objectives over decorative elements for learning efficiency
+Progressive disclosure revealing advanced features based on learner proficiency and engagement levels
+</aesthetics>
+
+<educational_design_principles>
+Cognitive load optimization through strategic information presentation and progressive complexity
+Learning path visualization enabling students to understand their educational journey and progress
+Adaptive interface elements that respond to individual learning styles and preferences
+Gamification integration that enhances motivation without compromising educational integrity
+Social learning features that facilitate peer interaction while maintaining focus on individual progress
+Assessment integration that feels natural and supportive rather than evaluative and stressful
+</educational_design_principles>
+</design_philosophy>
+
+<technical_specifications>
+<frontend_architecture>
+Framework: React.js with Next.js for server-side rendering and optimal performance
+Styling: Tailwind CSS with custom educational design system components
+State Management: Redux Toolkit for complex learning state management
+Real-time Communication: Socket.io for live collaboration and instant feedback
+Accessibility: WCAG 2.1 AA compliance with 4.5:1 contrast ratios minimum
+Progressive Web App capabilities for offline learning and mobile optimization
+</frontend_architecture>
+
+<ai_integration>
+Machine Learning: TensorFlow.js for client-side learning analytics and real-time adaptation
+Natural Language Processing: Integration with OpenAI GPT-4 for intelligent tutoring and content generation
+Adaptive Learning Engine: Custom algorithms for personalized learning path optimization
+Assessment AI: Automated question generation and intelligent grading systems
+Learning Analytics: Real-time performance tracking and predictive modeling
+Content Recommendation: AI-powered suggestion engine for optimal learning resources
+</ai_integration>
+
+<data_architecture>
+Real-time Analytics: Stream processing for immediate learning adaptation
+Learning Records: xAPI (Tin Can API) compliance for comprehensive learning tracking
+Privacy Protection: End-to-end encryption and FERPA-compliant data handling
+Performance Optimization: CDN integration for global content delivery
+Scalability: Microservices architecture supporting millions of concurrent learners
+</data_architecture>
+</technical_specifications>
+
+<core_features>
+<personalized_learning_engine>
+Adaptive content delivery that adjusts difficulty and pacing based on individual performance
+Intelligent learning path generation using machine learning algorithms
+Real-time performance analytics with predictive modeling for learning outcomes
+Multi-modal content support including text, video, interactive simulations, and VR experiences
+Personalized assessment creation with adaptive questioning and immediate feedback
+Learning style detection and accommodation through behavioral analysis
+</personalized_learning_engine>
+
+<ai_tutoring_system>
+Conversational AI tutor powered by advanced natural language processing
+Socratic dialogue implementation that guides students to understanding through questioning
+Intelligent hint system that provides just-enough support without giving away answers
+Mistake analysis and targeted remediation recommendations
+Progress celebration and motivation enhancement through AI-powered encouragement
+24/7 availability with context-aware responses based on learning history
+</ai_tutoring_system>
+
+<collaborative_learning>
+Peer matching algorithms for study groups and collaborative projects
+Real-time collaborative workspaces with shared whiteboards and document editing
+Discussion forums with AI-moderated content and intelligent topic suggestions
+Peer assessment tools with rubric-based evaluation and feedback systems
+Social learning analytics showing community engagement and knowledge sharing
+Mentorship matching connecting advanced learners with those needing support
+</collaborative_learning>
+
+<assessment_analytics>
+Continuous assessment through learning activity analysis rather than traditional testing
+Competency mapping with skill progression tracking and gap identification
+Portfolio-based assessment with AI-powered evaluation and feedback
+Predictive analytics for early intervention and support recommendations
+Learning outcome prediction with confidence intervals and improvement suggestions
+Comprehensive reporting for students, educators, and administrators
+</assessment_analytics>
+</core_features>
+
+<user_interface_design>
+<visual_identity>
+Primary Color Palette: Deep educational blue (#1e40af) for trust and focus, warm accent orange (#f97316) for engagement and motivation
+Secondary Colors: Success green (#10b981) for achievements, warning amber (#f59e0b) for attention, neutral grays (#6b7280, #f3f4f6) for content hierarchy
+Typography: Inter font family for optimal readability across devices, with clear hierarchy (32px headings, 18px body, 14px captions)
+Iconography: Lucide React icons with educational customizations for learning-specific actions
+Border Radius: 12px for cards and major components, 6px for buttons and form elements
+Shadows: Subtle elevation with 0 4px 6px -1px rgba(0, 0, 0, 0.1) for depth without distraction
+</visual_identity>
+
+<layout_structure>
+Dashboard Layout: Sidebar navigation with collapsible sections for different learning areas
+Learning Interface: Full-screen immersive mode with minimal distractions during active learning
+Progress Visualization: Horizontal progress bars with milestone markers and achievement badges
+Content Organization: Card-based layout with clear visual hierarchy and intuitive grouping
+Responsive Design: Mobile-first approach with touch-optimized interactions and gesture support
+Accessibility Features: High contrast mode, font size adjustment, keyboard navigation, screen reader optimization
+</layout_structure>
+
+<interaction_patterns>
+Smooth Transitions: 300ms ease-in-out animations for state changes and navigation
+Loading States: Skeleton screens and progress indicators for AI processing and content loading
+Feedback Systems: Immediate visual feedback for all user actions with success/error states
+Gesture Support: Swipe navigation for mobile devices and touch-friendly interaction zones
+Voice Integration: Speech-to-text for accessibility and hands-free learning interaction
+Offline Capability: Progressive web app features for continued learning without internet connectivity
+</interaction_patterns>
+</user_interface_design>
+
+<webhook_integration>
+<n8n_configuration>
+Primary Learning Webhook: '[INSERT_PERSONALIZED_LEARNING_WEBHOOK_URL]' for AI-powered content adaptation and tutoring
+Assessment Webhook: '[INSERT_ASSESSMENT_WEBHOOK_URL]' for intelligent evaluation and feedback generation
+Analytics Webhook: '[INSERT_ANALYTICS_WEBHOOK_URL]' for learning progress tracking and outcome prediction
+Content Generation Webhook: '[INSERT_CONTENT_WEBHOOK_URL]' for dynamic educational material creation
+Collaboration Webhook: '[INSERT_COLLABORATION_WEBHOOK_URL]' for peer matching and group formation
+</n8n_configuration>
+
+<data_flow>
+Request Format: JSON with learner profile, current learning context, performance history, and specific learning objectives
+Response Processing: Structured educational content with difficulty adaptation, personalized recommendations, and progress tracking
+Real-time Updates: WebSocket connections for live collaboration, instant feedback, and dynamic content updates
+Error Handling: Graceful degradation with offline capabilities and alternative learning paths when webhooks are unavailable
+Security: JWT authentication, request signing, and encrypted data transmission for all webhook communications
+</data_flow>
+</webhook_integration>
+
+<advanced_features>
+<ai_powered_capabilities>
+Intelligent Content Curation: AI-driven selection and organization of learning materials based on individual needs
+Adaptive Questioning: Dynamic question generation that adjusts to learner understanding and knowledge gaps
+Learning Path Optimization: Machine learning algorithms that continuously refine educational sequences
+Emotional Intelligence: Sentiment analysis and motivational support based on learner engagement patterns
+Predictive Intervention: Early warning systems for learners at risk of falling behind or disengaging
+Automated Accessibility: AI-powered content adaptation for learners with different abilities and learning needs
+</ai_powered_capabilities>
+
+<gamification_elements>
+Achievement System: Comprehensive badge and trophy system for learning milestones and skill mastery
+Progress Visualization: Interactive learning trees and skill maps showing educational journey
+Leaderboards: Healthy competition with privacy-respecting peer comparisons and team challenges
+Learning Streaks: Motivation through consistent engagement tracking and streak maintenance rewards
+Virtual Rewards: Digital certificates, unlockable content, and personalized learning avatars
+Challenge Modes: Time-based learning challenges and skill-building competitions with adaptive difficulty
+</gamification_elements>
+
+<accessibility_compliance>
+WCAG 2.1 AA Standards: Full compliance with international accessibility guidelines
+Screen Reader Support: Comprehensive ARIA labels and semantic HTML structure
+Keyboard Navigation: Complete functionality accessible through keyboard-only interaction
+Visual Accommodations: High contrast themes, font size adjustment, and color-blind friendly palettes
+Motor Accessibility: Large touch targets, gesture alternatives, and voice control integration
+Cognitive Support: Clear navigation, consistent layouts, and cognitive load reduction features
+</accessibility_compliance>
+</advanced_features>
+
+<deployment_specifications>
+<performance_requirements>
+Page Load Speed: Sub-2-second initial load times with progressive content loading
+Real-time Responsiveness: Sub-100ms response times for interactive learning elements
+Scalability: Support for 100,000+ concurrent learners with auto-scaling infrastructure
+Offline Functionality: Progressive web app capabilities with offline learning continuation
+Cross-platform Compatibility: Seamless experience across desktop, tablet, and mobile devices
+Global Performance: CDN integration for optimal performance regardless of geographic location
+</performance_requirements>
+
+<security_framework>
+Data Protection: End-to-end encryption for all learner data and educational content
+Privacy Compliance: FERPA, COPPA, and GDPR compliance with comprehensive privacy controls
+Authentication: Multi-factor authentication with SSO integration for institutional deployment
+Access Control: Role-based permissions for students, educators, administrators, and parents
+Audit Logging: Comprehensive activity tracking for security monitoring and compliance reporting
+Content Security: Protection against unauthorized access and educational content piracy
+</security_framework>
+
+<integration_capabilities>
+LMS Integration: Seamless connection with Canvas, Blackboard, Moodle, and other learning management systems
+Grade Passback: Automatic synchronization of learning progress and assessment results
+Single Sign-On: Integration with institutional authentication systems and identity providers
+Content Standards: Support for SCORM, xAPI, QTI, and other educational technology standards
+Third-party Tools: API integration with educational software, assessment platforms, and content libraries
+Analytics Export: Data portability for institutional reporting and external analytics platforms
+</integration_capabilities>
+</deployment_specifications>
+
+<quality_assurance>
+<testing_framework>
+Automated Testing: Comprehensive unit, integration, and end-to-end testing for all learning features
+Performance Testing: Load testing for high-concurrency learning scenarios and stress testing for peak usage
+Accessibility Testing: Automated and manual testing for compliance with accessibility standards
+Cross-browser Testing: Verification of functionality across all major browsers and devices
+Educational Effectiveness Testing: A/B testing for learning outcomes and engagement optimization
+Security Testing: Penetration testing and vulnerability assessment for educational data protection
+</testing_framework>
+
+<monitoring_analytics>
+Learning Analytics: Real-time dashboards for educational effectiveness and learner engagement
+Performance Monitoring: Application performance monitoring with alerting for service degradation
+User Experience Analytics: Heatmaps, user journey analysis, and interaction pattern tracking
+Educational Outcome Tracking: Long-term learning effectiveness measurement and improvement identification
+System Health Monitoring: Infrastructure monitoring with predictive maintenance and scaling alerts
+Privacy-compliant Analytics: Anonymized data collection and analysis respecting learner privacy
+</monitoring_analytics>
+</quality_assurance>
+
+## Implementation Instructions
+
+Create a comprehensive AI-powered personalized learning platform that revolutionizes education through intelligent adaptation and personalized instruction. The platform should serve as a complete educational ecosystem supporting learners, educators, and institutions with advanced AI capabilities and intuitive user experiences.
+
+The application must demonstrate enterprise-grade quality with sophisticated AI integration, comprehensive accessibility support, and seamless webhook connectivity for real-time personalization and analytics. Focus on creating an educational experience that adapts to individual learning needs while maintaining the highest standards of privacy, security, and educational effectiveness.
+
+Ensure the platform is immediately deployable with full functionality, requiring no additional development work. The generated application should represent the future of personalized education, combining cutting-edge AI technology with proven educational methodologies to optimize learning outcomes for every student.

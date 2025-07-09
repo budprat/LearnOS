@@ -39,6 +39,7 @@ export const users = pgTable("users", {
   level: integer("level").default(1),
   skillLevel: varchar("skill_level").default("Beginner"),
   weeklyGoalHours: integer("weekly_goal_hours").default(7),
+  totalXp: integer("total_xp").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
