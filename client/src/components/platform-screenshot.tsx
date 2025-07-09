@@ -119,63 +119,7 @@ export default function PlatformScreenshot() {
         </div>
       </div>
 
-      {/* Floating AI Assistant */}
-      <div className="absolute -right-4 top-20 w-80 bg-white rounded-xl shadow-lg border border-gray-200 p-4 animate-float">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <Brain className="h-4 w-4 text-white" />
-          </div>
-          <span className="font-medium text-gray-900">AI Tutor</span>
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3 mb-3">
-          <p className="text-sm text-gray-700">
-            Great job on completing the JavaScript lesson! Based on your progress, 
-            I recommend moving to React components next. Would you like me to create 
-            a personalized study plan?
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" className="flex-1">
-            Yes, create plan
-          </Button>
-          <Button size="sm" variant="outline">
-            <MessageSquare className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
 
-      {/* Analytics Widget */}
-      <div className="absolute -left-4 bottom-10 w-72 bg-white rounded-xl shadow-lg border border-gray-200 p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <BarChart3 className="h-5 w-5 text-primary" />
-          <span className="font-medium text-gray-900">Weekly Analytics</span>
-        </div>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Study Time</span>
-            <span className="text-sm font-medium">18.5 hrs</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Lessons Completed</span>
-            <span className="text-sm font-medium">23</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">XP Earned</span>
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-medium">340</span>
-              <TrendingUp className="h-3 w-3 text-green-500" />
-            </div>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Streak</span>
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-medium">7 days</span>
-              <Award className="h-3 w-3 text-yellow-500" />
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
