@@ -49,7 +49,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const user = await storage.getUser(userId);
+      let user = await storage.getUser(userId);
+      
+      // Create user profile if it doesn't exist
+      if (!user) {
+        user = await storage.upsertUser({
+          id: userId,
+          email: req.user.email,
+          firstName: req.user.user_metadata?.first_name || null,
+          lastName: req.user.user_metadata?.last_name || null,
+          profileImageUrl: req.user.user_metadata?.avatar_url || null,
+        });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -153,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard data endpoint
   app.get('/api/dashboard', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -232,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User courses endpoints
   app.get('/api/user/courses', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const userCourses = await storage.getUserCourses(userId);
       res.json(userCourses);
     } catch (error) {
@@ -243,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/user/courses', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertUserCourseSchema.parse({
         ...req.body,
         userId
@@ -270,7 +282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Learning paths endpoints
   app.get('/api/learning-paths', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const paths = await storage.getUserLearningPaths(userId);
       res.json(paths);
     } catch (error) {
@@ -281,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/learning-paths', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertLearningPathSchema.parse({
         ...req.body,
         userId
@@ -308,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI recommendations endpoint
   app.get('/api/recommendations', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const recommendations = await storage.getUserRecommendations(userId);
       res.json(recommendations);
     } catch (error) {
@@ -319,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recommendations/generate', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const userCourses = await storage.getUserCourses(userId);
       
@@ -358,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assessments endpoints
   app.get('/api/assessments', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const assessments = await storage.getUserAssessments(userId);
       res.json(assessments);
     } catch (error) {
@@ -369,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/assessments', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertAssessmentSchema.parse({
         ...req.body,
         userId
@@ -407,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/study-groups/:id/join', isAuthenticated, async (req: any, res) => {
     try {
       const groupId = parseInt(req.params.id);
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const member = await storage.joinStudyGroup(groupId, userId);
       res.status(201).json(member);
     } catch (error) {
@@ -419,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI tutor endpoints
   app.get('/api/ai-tutor/sessions', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const sessions = await storage.getUserAiTutorSessions(userId);
       res.json(sessions);
     } catch (error) {
@@ -430,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/ai-tutor/chat', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { message, sessionId } = req.body;
       const user = await storage.getUser(userId);
       
@@ -479,7 +491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics endpoint
   app.get('/api/analytics', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const userCourses = await storage.getUserCourses(userId);
       const assessments = await storage.getUserAssessments(userId);
@@ -520,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Advanced AI endpoints
   app.post("/api/ai/detect-learning-style", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { interactionHistory = [], coursePreferences = [] } = req.body;
       
       const { detectLearningStyle } = await import("./openai");
@@ -563,7 +575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/ai/predict-intervention", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { progressData = {}, engagementMetrics = {}, assessmentHistory = [] } = req.body;
       
       const { predictLearningIntervention } = await import("./openai");
@@ -578,7 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/ai/competency-map", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const targetRole = req.query.targetRole as string;
       
       const userCourses = await storage.getUserCourses(userId);
@@ -600,7 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Gamification endpoints
   app.get("/api/gamification/achievements", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       const userCourses = await storage.getUserCourses(userId);
       const assessments = await storage.getUserAssessments(userId);
