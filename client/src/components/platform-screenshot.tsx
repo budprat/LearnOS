@@ -21,7 +21,8 @@ export default function PlatformScreenshot() {
     <div className="relative">
       {/* Main Dashboard Screenshot */}
       <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-6">
+        {/* Navigation Header */}
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
               <Brain className="h-5 w-5 text-white" />
@@ -31,10 +32,20 @@ export default function PlatformScreenshot() {
               <p className="text-sm text-gray-500">Welcome back, Alex!</p>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-green-100 text-green-700">
-            <Target className="h-3 w-3 mr-1" />
-            On Track
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Lessons
+            </Button>
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Community
+            </Button>
+            <Badge variant="secondary" className="bg-green-100 text-green-700">
+              <Target className="h-3 w-3 mr-1" />
+              On Track
+            </Badge>
+          </div>
         </div>
 
         {/* Today's Progress */}
