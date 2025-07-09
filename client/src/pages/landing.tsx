@@ -82,10 +82,12 @@ export default function Landing() {
               <Button 
                 size="lg" 
                 className="text-lg px-8 py-3 shadow-lg hover:shadow-xl transition-all group"
-                onClick={() => window.location.href = '/api/login'}
+                asChild
               >
-                Start Learning Today
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                <Link href="/auth">
+                  Start Learning Today
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </Button>
               <Button 
                 size="lg" 

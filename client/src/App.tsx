@@ -12,17 +12,20 @@ import AiTutor from "@/pages/ai-tutor";
 import Analytics from "@/pages/analytics";
 import Community from "@/pages/community";
 import Lesson from "@/pages/lesson";
+import AuthPage from "@/pages/auth";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <Switch>
+      <Route path="/auth" component={AuthPage} />
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
         <>
           <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/courses" component={Courses} />
           <Route path="/lesson/:id" component={Lesson} />
           <Route path="/ai-tutor" component={AiTutor} />
