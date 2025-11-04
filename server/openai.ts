@@ -1,9 +1,17 @@
 import OpenAI from "openai";
 import type { User, Course, UserCourse, Assessment } from "@shared/schema";
 
+// Get OpenAI API key from environment variable
+const apiKey = process.env.OPENAI_API_KEY;
+
+// Validate required environment variable
+if (!apiKey) {
+  throw new Error('Missing required environment variable: OPENAI_API_KEY. Please check your .env file.');
+}
+
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key" 
+const openai = new OpenAI({
+  apiKey: apiKey
 });
 
 // Advanced AI types for adaptive learning
