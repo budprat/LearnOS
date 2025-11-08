@@ -1,17 +1,19 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
+import rateLimit from "express-rate-limit";
+import { body, validationResult } from "express-validator";
 import { storage } from "./storage";
 import { supabase } from "./supabase";
-import { 
-  generatePersonalizedRecommendations, 
-  generateAiTutorResponse, 
+import {
+  generatePersonalizedRecommendations,
+  generateAiTutorResponse,
   generateLearningPathSuggestions,
-  analyzeUserProgress 
+  analyzeUserProgress
 } from "./openai";
-import { 
-  insertCourseSchema, 
-  insertLearningPathSchema, 
+import {
+  insertCourseSchema,
+  insertLearningPathSchema,
   insertUserCourseSchema,
   insertAssessmentSchema,
   insertStudyGroupSchema,
@@ -23,16 +25,16 @@ import { db } from "./db";
 // Middleware to check authentication
 const isAuthenticated = async (req: any, res: any, next: any) => {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader) {
     return res.status(401).json({ message: "No authorization header" });
   }
 
   const token = authHeader.replace("Bearer ", "");
-  
+
   try {
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    
+
     if (error || !user) {
       return res.status(401).json({ message: "Invalid token" });
     }
@@ -44,7 +46,41 @@ const isAuthenticated = async (req: any, res: any, next: any) => {
   }
 };
 
+// Rate limiting middleware for AI endpoints
+const aiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per window
+  message: {
+    message: "Too many AI requests from this IP, please try again later"
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// General API rate limiter
+const generalRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  message: {
+    message: "Too many requests from this IP, please try again later"
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Validation middleware helper
+const validateRequest = (req: any, res: any, next: any) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply general rate limiting to all API routes
+  app.use('/api/', generalRateLimiter);
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -329,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/recommendations/generate', isAuthenticated, async (req: any, res) => {
+  app.post('/api/recommendations/generate', aiRateLimiter, isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -440,7 +476,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/ai-tutor/chat', isAuthenticated, async (req: any, res) => {
+  app.post('/api/ai-tutor/chat',
+    aiRateLimiter,
+    isAuthenticated,
+    [
+      body('message').isString().trim().isLength({ min: 1, max: 2000 }).withMessage('Message must be between 1 and 2000 characters'),
+      body('sessionId').optional().isString()
+    ],
+    validateRequest,
+    async (req: any, res: any) => {
     try {
       const userId = req.user.id;
       const { message, sessionId } = req.body;
@@ -694,11 +738,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/lessons/:id/progress', isAuthenticated, async (req, res) => {
+  app.post('/api/lessons/:id/progress',
+    isAuthenticated,
+    [
+      body('progress').optional().isInt({ min: 0, max: 100 }).withMessage('Progress must be between 0 and 100'),
+      body('timeSpent').optional().isInt({ min: 0 }).withMessage('Time spent must be a positive number'),
+      body('completedSections').optional().isArray().withMessage('Completed sections must be an array'),
+      body('lastPosition').optional().isInt({ min: 0 }).withMessage('Last position must be a positive number')
+    ],
+    validateRequest,
+    async (req: any, res: any) => {
     try {
       const lessonId = parseInt(req.params.id);
-      const userId = (req as any).user?.claims?.sub;
-      
+      const userId = req.user.id;
+
       // Check if progress already exists
       const existingProgress = await storage.getUserLessonProgress(userId, lessonId);
       if (existingProgress) {
@@ -718,10 +771,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/lessons/:id/progress', isAuthenticated, async (req, res) => {
+  app.get('/api/lessons/:id/progress', isAuthenticated, async (req: any, res: any) => {
     try {
       const lessonId = parseInt(req.params.id);
-      const userId = (req as any).user?.claims?.sub;
+      const userId = req.user.id;
       const progress = await storage.getUserLessonProgress(userId, lessonId);
       res.json(progress);
     } catch (error) {
@@ -730,10 +783,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/lessons/:id/notes', isAuthenticated, async (req, res) => {
+  app.get('/api/lessons/:id/notes', isAuthenticated, async (req: any, res: any) => {
     try {
       const lessonId = parseInt(req.params.id);
-      const userId = (req as any).user?.claims?.sub;
+      const userId = req.user.id;
       const notes = await storage.getUserLessonNotes(userId, lessonId);
       res.json(notes);
     } catch (error) {
@@ -742,10 +795,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/lessons/:id/notes', isAuthenticated, async (req, res) => {
+  app.post('/api/lessons/:id/notes',
+    isAuthenticated,
+    [
+      body('content').isString().trim().isLength({ min: 1, max: 5000 }).withMessage('Note content must be between 1 and 5000 characters'),
+      body('position').optional().isInt({ min: 0 }).withMessage('Position must be a positive number'),
+      body('highlighted').optional().isBoolean().withMessage('Highlighted must be a boolean')
+    ],
+    validateRequest,
+    async (req: any, res: any) => {
     try {
       const lessonId = parseInt(req.params.id);
-      const userId = (req as any).user?.claims?.sub;
+      const userId = req.user.id;
       const note = await storage.createLessonNote({
         ...req.body,
         userId,
@@ -769,10 +830,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/lessons/:id/bookmarks', isAuthenticated, async (req, res) => {
+  app.get('/api/lessons/:id/bookmarks', isAuthenticated, async (req: any, res: any) => {
     try {
       const lessonId = parseInt(req.params.id);
-      const userId = (req as any).user?.claims?.sub;
+      const userId = req.user.id;
       const bookmarks = await storage.getUserLessonBookmarks(userId, lessonId);
       res.json(bookmarks);
     } catch (error) {
@@ -781,10 +842,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/lessons/:id/bookmarks', isAuthenticated, async (req, res) => {
+  app.post('/api/lessons/:id/bookmarks', isAuthenticated, async (req: any, res: any) => {
     try {
       const lessonId = parseInt(req.params.id);
-      const userId = (req as any).user?.claims?.sub;
+      const userId = req.user.id;
       const bookmark = await storage.createLessonBookmark({
         ...req.body,
         userId,
