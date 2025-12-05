@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import NodeCache from "node-cache";
 import type { User, Course, UserCourse, Assessment } from "@shared/schema";
 
 // Get OpenAI API key from environment variable
@@ -13,6 +14,55 @@ if (!apiKey) {
 const openai = new OpenAI({
   apiKey: apiKey
 });
+
+// ============================================
+// AI RESPONSE CACHING
+// ============================================
+
+// Cache configuration with different TTLs for different AI functions
+const aiCache = new NodeCache({
+  stdTTL: 3600, // Default: 1 hour
+  checkperiod: 600, // Check for expired keys every 10 minutes
+  useClones: true, // Clone objects to avoid reference issues
+  maxKeys: 1000, // Limit cache size
+});
+
+// Cache keys generators for consistent caching
+const generateCacheKey = {
+  recommendations: (userId: string, skillLevel: string) =>
+    `recommendations:${userId}:${skillLevel}`,
+  learningPath: (userId: string, goals: string[], skillLevel: string) =>
+    `learningPath:${userId}:${goals.sort().join('-')}:${skillLevel}`,
+  progressAnalysis: (userId: string) =>
+    `progressAnalysis:${userId}`,
+  learningStyle: (userId: string) =>
+    `learningStyle:${userId}`,
+  competencyMap: (userId: string, targetRole?: string) =>
+    `competencyMap:${userId}:${targetRole || 'general'}`,
+  adaptiveQuestions: (topic: string, userLevel: string) =>
+    `adaptiveQuestions:${topic}:${userLevel}`,
+};
+
+// Cache statistics for monitoring
+export const getCacheStats = () => ({
+  keys: aiCache.keys(),
+  hits: aiCache.getStats().hits,
+  misses: aiCache.getStats().misses,
+  ksize: aiCache.getStats().ksize,
+  vsize: aiCache.getStats().vsize,
+});
+
+// Clear specific user's cache
+export const clearUserCache = (userId: string) => {
+  const keys = aiCache.keys().filter(key => key.includes(userId));
+  keys.forEach(key => aiCache.del(key));
+  return keys.length;
+};
+
+// Clear all AI cache
+export const clearAllCache = () => {
+  aiCache.flushAll();
+};
 
 // Advanced AI types for adaptive learning
 interface LearningStyle {
@@ -32,7 +82,8 @@ export async function generatePersonalizedRecommendations(
   userId: string,
   userProgress: any,
   completedCourses: any[],
-  skillLevel: string
+  skillLevel: string,
+  forceRefresh: boolean = false
 ): Promise<{
   recommendations: Array<{
     title: string;
@@ -41,7 +92,29 @@ export async function generatePersonalizedRecommendations(
     priority: number;
     estimatedDuration: number;
   }>;
+  fromCache?: boolean;
 }> {
+  const cacheKey = generateCacheKey.recommendations(userId, skillLevel);
+
+  // Check cache first (unless forceRefresh is true)
+  if (!forceRefresh) {
+    const cached = aiCache.get<{
+      recommendations: Array<{
+        title: string;
+        description: string;
+        reason: string;
+        priority: number;
+        estimatedDuration: number;
+      }>;
+    }>(cacheKey);
+    if (cached) {
+      console.log(`[AI Cache HIT] Recommendations for user ${userId}`);
+      return { ...cached, fromCache: true };
+    }
+  }
+
+  console.log(`[AI Cache MISS] Generating recommendations for user ${userId}`);
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -74,24 +147,25 @@ Please provide 3-5 personalized course recommendations in JSON format with the f
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
-    return result;
+
+    // Cache for 24 hours (recommendations don't need to change frequently)
+    aiCache.set(cacheKey, result, 86400);
+
+    return { ...result, fromCache: false };
   } catch (error) {
     console.error("Error generating recommendations:", error);
-    return { recommendations: [] };
+    return { recommendations: [], fromCache: false };
   }
 }
 
 export async function generateAiTutorResponse(
-  messages: Array<{ role: string; content: string }>,
+  messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
   userContext: any
 ): Promise<string> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are an AI tutor that provides personalized learning guidance. You use the Socratic method to guide students to understanding through strategic questioning. Be encouraging, patient, and adaptive to the student's learning style and pace.
+    const systemMessage: { role: "system"; content: string } = {
+      role: "system",
+      content: `You are an AI tutor that provides personalized learning guidance. You use the Socratic method to guide students to understanding through strategic questioning. Be encouraging, patient, and adaptive to the student's learning style and pace.
 
 User context: ${JSON.stringify(userContext)}
 
@@ -101,9 +175,16 @@ Guidelines:
 - Celebrate progress and achievements
 - Adapt explanations to the user's skill level
 - Be encouraging and supportive`,
-        },
-        ...messages,
-      ],
+    };
+
+    const formattedMessages = messages.map(msg => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content
+    }));
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [systemMessage, ...formattedMessages],
     });
 
     return response.choices[0].message.content || "I'm sorry, I couldn't process your request right now.";
@@ -244,7 +325,18 @@ export async function detectLearningStyle(
   userId: string,
   interactionHistory: any[],
   coursePreferences: any[]
-): Promise<LearningStyle> {
+): Promise<LearningStyle & { fromCache?: boolean }> {
+  const cacheKey = generateCacheKey.learningStyle(userId);
+
+  // Check cache first (learning style doesn't change often)
+  const cached = aiCache.get<LearningStyle>(cacheKey);
+  if (cached) {
+    console.log(`[AI Cache HIT] Learning style for user ${userId}`);
+    return { ...cached, fromCache: true };
+  }
+
+  console.log(`[AI Cache MISS] Detecting learning style for user ${userId}`);
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -271,10 +363,15 @@ Return a JSON object with scores (0-1) for each learning style:
       response_format: { type: "json_object" },
     });
 
-    return JSON.parse(response.choices[0].message.content || '{"visual":0.25,"auditory":0.25,"kinesthetic":0.25,"reading":0.25}');
+    const result = JSON.parse(response.choices[0].message.content || '{"visual":0.25,"auditory":0.25,"kinesthetic":0.25,"reading":0.25}');
+
+    // Cache for 7 days (learning style is stable)
+    aiCache.set(cacheKey, result, 604800);
+
+    return { ...result, fromCache: false };
   } catch (error) {
     console.error("Error detecting learning style:", error);
-    return { visual: 0.25, auditory: 0.25, kinesthetic: 0.25, reading: 0.25 };
+    return { visual: 0.25, auditory: 0.25, kinesthetic: 0.25, reading: 0.25, fromCache: false };
   }
 }
 

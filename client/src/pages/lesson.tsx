@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRoute } from "wouter";
+import ReactPlayer from "react-player";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -7,14 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Play, 
-  Pause, 
-  SkipBack, 
-  SkipForward, 
-  BookOpen, 
-  FileText, 
-  CheckCircle, 
+import { Slider } from "@/components/ui/slider";
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  BookOpen,
+  FileText,
+  CheckCircle,
   Circle,
   ArrowLeft,
   ArrowRight,
@@ -35,7 +37,12 @@ import {
   CheckSquare,
   XCircle,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Maximize,
+  Minimize,
+  RotateCcw,
+  Timer,
+  Trophy
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -154,6 +161,35 @@ export default function Lesson() {
   const [assessmentAnswers, setAssessmentAnswers] = useState<{ [key: string]: string }>({});
   const [assessmentSubmitted, setAssessmentSubmitted] = useState(false);
   const [assessmentResults, setAssessmentResults] = useState<AssessmentResult | null>(null);
+  const [assessmentTimer, setAssessmentTimer] = useState<number | null>(null);
+  const [assessmentStartTime, setAssessmentStartTime] = useState<number | null>(null);
+  const [showHints, setShowHints] = useState<{ [key: string]: boolean }>({});
+
+  // Helper function to format time
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Assessment timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (currentAssessment && currentAssessment.timeLimit && assessmentStartTime && !assessmentSubmitted) {
+      interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - assessmentStartTime) / 1000);
+        const remaining = (currentAssessment.timeLimit! * 60) - elapsed;
+        setAssessmentTimer(Math.max(0, remaining));
+
+        if (remaining <= 0) {
+          handleSubmitAssessment();
+        }
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [currentAssessment, assessmentStartTime, assessmentSubmitted]);
 
   // Fetch lesson content
   const { data: lesson, isLoading: lessonLoading } = useQuery<LessonContent>({
@@ -170,10 +206,8 @@ export default function Lesson() {
   // Update progress mutation
   const updateProgressMutation = useMutation({
     mutationFn: async (progressData: Partial<UserProgress>) => {
-      return apiRequest(`/api/lessons/${params?.id}/progress`, {
-        method: "PUT",
-        body: JSON.stringify(progressData),
-      });
+      const res = await apiRequest("PUT", `/api/lessons/${params?.id}/progress`, progressData);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/lessons/${params?.id}/progress`] });
@@ -183,10 +217,8 @@ export default function Lesson() {
   // Save note mutation
   const saveNoteMutation = useMutation({
     mutationFn: async (note: Omit<Note, 'id'>) => {
-      return apiRequest(`/api/lessons/${params?.id}/notes`, {
-        method: "POST",
-        body: JSON.stringify(note),
-      });
+      const res = await apiRequest("POST", `/api/lessons/${params?.id}/notes`, note);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/lessons/${params?.id}/progress`] });
@@ -202,10 +234,8 @@ export default function Lesson() {
   // Save bookmark mutation
   const saveBookmarkMutation = useMutation({
     mutationFn: async (bookmark: Omit<Bookmark, 'id'>) => {
-      return apiRequest(`/api/lessons/${params?.id}/bookmarks`, {
-        method: "POST",
-        body: JSON.stringify(bookmark),
-      });
+      const res = await apiRequest("POST", `/api/lessons/${params?.id}/bookmarks`, bookmark);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/lessons/${params?.id}/progress`] });
@@ -218,13 +248,11 @@ export default function Lesson() {
 
   // Submit assessment mutation
   const submitAssessmentMutation = useMutation({
-    mutationFn: async (assessmentData: { assessmentId: string; answers: { [key: string]: string } }) => {
-      return apiRequest(`/api/lessons/${params?.id}/assessments/${assessmentData.assessmentId}/submit`, {
-        method: "POST",
-        body: JSON.stringify(assessmentData),
-      });
+    mutationFn: async (assessmentData: { assessmentId: string; score: number; answers: { [key: string]: string }; timeSpent: number }) => {
+      const res = await apiRequest("POST", `/api/lessons/${params?.id}/assessments/${assessmentData.assessmentId}/submit`, assessmentData);
+      return res.json();
     },
-    onSuccess: (result) => {
+    onSuccess: (result: AssessmentResult) => {
       setAssessmentResults(result);
       setAssessmentSubmitted(true);
       queryClient.invalidateQueries({ queryKey: [`/api/lessons/${params?.id}/progress`] });
@@ -279,22 +307,69 @@ export default function Lesson() {
     setAssessmentAnswers({});
     setAssessmentSubmitted(false);
     setAssessmentResults(null);
+    setShowHints({});
+    setAssessmentStartTime(Date.now());
+    if (assessment.timeLimit) {
+      setAssessmentTimer(assessment.timeLimit * 60);
+    }
   };
 
-  const handleSubmitAssessment = () => {
-    if (!currentAssessment) return;
+  const handleSubmitAssessment = useCallback(() => {
+    if (!currentAssessment || !assessmentStartTime) return;
+
+    const timeSpent = Math.floor((Date.now() - assessmentStartTime) / 1000);
+
+    // Calculate score
+    let totalPoints = 0;
+    let earnedPoints = 0;
+
+    currentAssessment.questions.forEach((question) => {
+      totalPoints += question.points;
+      const userAnswer = assessmentAnswers[question.id];
+      if (userAnswer) {
+        // Check if answer is correct
+        if (Array.isArray(question.correctAnswer)) {
+          if (question.correctAnswer.includes(userAnswer)) {
+            earnedPoints += question.points;
+          }
+        } else if (userAnswer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim()) {
+          earnedPoints += question.points;
+        }
+      }
+    });
+
+    const score = Math.round((earnedPoints / totalPoints) * 100);
 
     submitAssessmentMutation.mutate({
       assessmentId: currentAssessment.id,
+      score,
       answers: assessmentAnswers,
+      timeSpent,
     });
-  };
+  }, [currentAssessment, assessmentStartTime, assessmentAnswers, submitAssessmentMutation]);
 
   const handleAnswerChange = (questionId: string, answer: string) => {
     setAssessmentAnswers(prev => ({
       ...prev,
       [questionId]: answer,
     }));
+  };
+
+  const toggleHint = (questionId: string) => {
+    setShowHints(prev => ({
+      ...prev,
+      [questionId]: !prev[questionId],
+    }));
+  };
+
+  const resetAssessment = () => {
+    setCurrentAssessment(null);
+    setAssessmentAnswers({});
+    setAssessmentSubmitted(false);
+    setAssessmentResults(null);
+    setAssessmentTimer(null);
+    setAssessmentStartTime(null);
+    setShowHints({});
   };
 
   if (lessonLoading || progressLoading) {
@@ -369,14 +444,122 @@ export default function Lesson() {
             <Card className="mb-6">
               <CardContent className="p-0">
                 {lesson.videoUrl && (
-                  <div className="aspect-video bg-black rounded-t-lg relative">
-                    <video
-                      className="w-full h-full rounded-t-lg"
-                      controls
-                      src={lesson.videoUrl}
-                      onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                      onDurationChange={(e) => setDuration(e.currentTarget.duration)}
+                  <div className="aspect-video bg-black rounded-t-lg relative group">
+                    <ReactPlayer
+                      url={lesson.videoUrl}
+                      width="100%"
+                      height="100%"
+                      playing={isPlaying}
+                      volume={isMuted ? 0 : volume}
+                      playbackRate={playbackSpeed}
+                      onProgress={(state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
+                        setCurrentTime(state.playedSeconds);
+                        // Auto-save progress every 10 seconds
+                        if (Math.floor(state.playedSeconds) % 10 === 0) {
+                          updateProgressMutation.mutate({
+                            progress: Math.min(100, (state.playedSeconds / duration) * 100),
+                            lastPosition: Math.floor(state.playedSeconds),
+                          });
+                        }
+                      }}
+                      onDuration={(dur: number) => setDuration(dur)}
+                      onEnded={() => {
+                        setIsPlaying(false);
+                        updateProgressMutation.mutate({
+                          progress: 100,
+                          lastPosition: Math.floor(duration),
+                        });
+                        toast({
+                          title: "Lesson completed!",
+                          description: "Great job! You've finished watching this lesson.",
+                        });
+                      }}
+                      config={{
+                        file: {
+                          attributes: {
+                            controlsList: 'nodownload'
+                          }
+                        }
+                      }}
+                      className="rounded-t-lg"
                     />
+                    {/* Custom Video Controls Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Progress Bar */}
+                      <div className="mb-3">
+                        <Slider
+                          value={[currentTime]}
+                          max={duration || 100}
+                          step={1}
+                          onValueChange={(value) => setCurrentTime(value[0])}
+                          className="cursor-pointer"
+                        />
+                        <div className="flex justify-between text-xs text-white/80 mt-1">
+                          <span>{formatTime(currentTime)}</span>
+                          <span>{formatTime(duration)}</span>
+                        </div>
+                      </div>
+                      {/* Controls */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white hover:bg-white/20"
+                            onClick={() => setCurrentTime(Math.max(0, currentTime - 10))}
+                          >
+                            <SkipBack className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white hover:bg-white/20"
+                            onClick={() => setIsPlaying(!isPlaying)}
+                          >
+                            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white hover:bg-white/20"
+                            onClick={() => setCurrentTime(Math.min(duration, currentTime + 10))}
+                          >
+                            <SkipForward className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white hover:bg-white/20"
+                            onClick={() => setIsMuted(!isMuted)}
+                          >
+                            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                          </Button>
+                          <div className="w-20">
+                            <Slider
+                              value={[volume * 100]}
+                              max={100}
+                              step={1}
+                              onValueChange={(value) => setVolume(value[0] / 100)}
+                              className="cursor-pointer"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={playbackSpeed}
+                            onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+                            className="bg-transparent text-white text-sm border border-white/30 rounded px-2 py-1"
+                          >
+                            <option value="0.5" className="text-black">0.5x</option>
+                            <option value="0.75" className="text-black">0.75x</option>
+                            <option value="1" className="text-black">1x</option>
+                            <option value="1.25" className="text-black">1.25x</option>
+                            <option value="1.5" className="text-black">1.5x</option>
+                            <option value="2" className="text-black">2x</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
                 <div className="p-6">
@@ -549,59 +732,260 @@ export default function Lesson() {
                           ))}
                         </div>
                       ) : (
-                        <Card>
-                          <CardHeader>
-                            <CardTitle>{currentAssessment.title}</CardTitle>
-                            <CardDescription>
-                              Answer all questions to complete the assessment
-                            </CardDescription>
+                        <Card className="border-2">
+                          <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <CardTitle className="flex items-center gap-2">
+                                  <Award className="h-5 w-5 text-yellow-500" />
+                                  {currentAssessment.title}
+                                </CardTitle>
+                                <CardDescription>
+                                  {currentAssessment.questions.length} questions • Passing score: {currentAssessment.passingScore}%
+                                </CardDescription>
+                              </div>
+                              {assessmentTimer !== null && !assessmentSubmitted && (
+                                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                                  assessmentTimer < 60 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                  <Timer className="h-4 w-4" />
+                                  <span className="font-mono font-bold">
+                                    {formatTime(assessmentTimer)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            {!assessmentSubmitted && (
+                              <div className="mt-3">
+                                <div className="flex justify-between text-sm text-gray-600 mb-1">
+                                  <span>Progress</span>
+                                  <span>{Object.keys(assessmentAnswers).length} / {currentAssessment.questions.length} answered</span>
+                                </div>
+                                <Progress
+                                  value={(Object.keys(assessmentAnswers).length / currentAssessment.questions.length) * 100}
+                                  className="h-2"
+                                />
+                              </div>
+                            )}
                           </CardHeader>
-                          <CardContent>
+                          <CardContent className="pt-6">
                             {!assessmentSubmitted ? (
-                              <div className="space-y-6">
+                              <div className="space-y-8">
                                 {currentAssessment.questions.map((question, index) => (
-                                  <div key={question.id} className="border-b pb-4">
-                                    <h4 className="font-medium mb-3">
-                                      {index + 1}. {question.question}
-                                    </h4>
-                                    {question.options && (
-                                      <div className="space-y-2">
+                                  <div key={question.id} className="p-4 rounded-lg bg-gray-50 border">
+                                    <div className="flex items-start justify-between mb-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                          assessmentAnswers[question.id]
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-gray-300 text-gray-600'
+                                        }`}>
+                                          {index + 1}
+                                        </div>
+                                        <div>
+                                          <h4 className="font-medium">{question.question}</h4>
+                                          <span className="text-xs text-gray-500">{question.points} points • {question.type}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {question.type === 'multiple-choice' && question.options && (
+                                      <div className="space-y-3 ml-11">
                                         {question.options.map((option, optionIndex) => (
-                                          <label key={optionIndex} className="flex items-center gap-2">
+                                          <label
+                                            key={optionIndex}
+                                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                                              assessmentAnswers[question.id] === option
+                                                ? 'bg-blue-100 border-2 border-blue-500'
+                                                : 'bg-white border-2 border-gray-200 hover:border-blue-300'
+                                            }`}
+                                          >
                                             <input
                                               type="radio"
                                               name={question.id}
                                               value={option}
+                                              checked={assessmentAnswers[question.id] === option}
                                               onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                              className="text-primary"
+                                              className="h-4 w-4 text-blue-600"
                                             />
                                             <span className="text-sm">{option}</span>
                                           </label>
                                         ))}
                                       </div>
                                     )}
+
+                                    {question.type === 'true-false' && (
+                                      <div className="flex gap-4 ml-11">
+                                        {['True', 'False'].map((option) => (
+                                          <label
+                                            key={option}
+                                            className={`flex items-center gap-2 px-6 py-3 rounded-lg cursor-pointer transition-all ${
+                                              assessmentAnswers[question.id] === option
+                                                ? 'bg-blue-100 border-2 border-blue-500'
+                                                : 'bg-white border-2 border-gray-200 hover:border-blue-300'
+                                            }`}
+                                          >
+                                            <input
+                                              type="radio"
+                                              name={question.id}
+                                              value={option}
+                                              checked={assessmentAnswers[question.id] === option}
+                                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                              className="h-4 w-4 text-blue-600"
+                                            />
+                                            <span>{option}</span>
+                                          </label>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {(question.type === 'short-answer' || question.type === 'essay') && (
+                                      <div className="ml-11">
+                                        <Textarea
+                                          placeholder="Type your answer here..."
+                                          value={assessmentAnswers[question.id] || ''}
+                                          onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                          className={question.type === 'essay' ? 'min-h-[150px]' : 'min-h-[80px]'}
+                                        />
+                                      </div>
+                                    )}
                                   </div>
                                 ))}
-                                <Button onClick={handleSubmitAssessment} className="w-full">
-                                  Submit Assessment
-                                </Button>
+
+                                <div className="flex gap-4 pt-4">
+                                  <Button
+                                    variant="outline"
+                                    onClick={resetAssessment}
+                                    className="flex-1"
+                                  >
+                                    <RotateCcw className="h-4 w-4 mr-2" />
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    onClick={handleSubmitAssessment}
+                                    className="flex-1"
+                                    disabled={Object.keys(assessmentAnswers).length < currentAssessment.questions.length}
+                                  >
+                                    <CheckSquare className="h-4 w-4 mr-2" />
+                                    Submit Assessment
+                                  </Button>
+                                </div>
                               </div>
                             ) : assessmentResults && (
-                              <div className="text-center space-y-4">
-                                <div className="text-3xl font-bold text-primary">
-                                  {assessmentResults.score}%
+                              <div className="text-center space-y-6 py-8">
+                                <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center ${
+                                  assessmentResults.score >= currentAssessment.passingScore
+                                    ? 'bg-green-100'
+                                    : 'bg-red-100'
+                                }`}>
+                                  {assessmentResults.score >= currentAssessment.passingScore ? (
+                                    <Trophy className="h-12 w-12 text-green-600" />
+                                  ) : (
+                                    <XCircle className="h-12 w-12 text-red-600" />
+                                  )}
                                 </div>
-                                <p className="text-gray-600">
-                                  {assessmentResults.score >= currentAssessment.passingScore
-                                    ? "Congratulations! You passed!"
-                                    : "You need to score higher to pass. Try again!"}
-                                </p>
-                                <Button 
-                                  onClick={() => setCurrentAssessment(null)}
-                                  variant="outline"
-                                >
-                                  Back to Assessments
-                                </Button>
+
+                                <div>
+                                  <div className={`text-5xl font-bold ${
+                                    assessmentResults.score >= currentAssessment.passingScore
+                                      ? 'text-green-600'
+                                      : 'text-red-600'
+                                  }`}>
+                                    {assessmentResults.score}%
+                                  </div>
+                                  <p className="text-gray-600 mt-2">
+                                    {assessmentResults.score >= currentAssessment.passingScore
+                                      ? "Excellent work! You passed the assessment!"
+                                      : `You need ${currentAssessment.passingScore}% to pass. Keep learning and try again!`}
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+                                  <div className="p-4 bg-gray-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-gray-700">
+                                      {Object.keys(assessmentAnswers).length}
+                                    </div>
+                                    <div className="text-xs text-gray-500">Questions</div>
+                                  </div>
+                                  <div className="p-4 bg-gray-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-gray-700">
+                                      {assessmentResults.timeSpent ? formatTime(assessmentResults.timeSpent) : '--:--'}
+                                    </div>
+                                    <div className="text-xs text-gray-500">Time Spent</div>
+                                  </div>
+                                  <div className="p-4 bg-gray-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-blue-600">
+                                      +{Math.round(assessmentResults.score * 0.5)}
+                                    </div>
+                                    <div className="text-xs text-gray-500">XP Earned</div>
+                                  </div>
+                                </div>
+
+                                {/* Question Review */}
+                                <div className="text-left mt-8">
+                                  <h4 className="font-semibold mb-4">Question Review</h4>
+                                  <div className="space-y-3">
+                                    {currentAssessment.questions.map((question, index) => {
+                                      const userAnswer = assessmentAnswers[question.id];
+                                      const isCorrect = Array.isArray(question.correctAnswer)
+                                        ? question.correctAnswer.includes(userAnswer)
+                                        : userAnswer?.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
+
+                                      return (
+                                        <div key={question.id} className={`p-4 rounded-lg border ${
+                                          isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                                        }`}>
+                                          <div className="flex items-start gap-3">
+                                            {isCorrect ? (
+                                              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                                            ) : (
+                                              <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                                            )}
+                                            <div className="flex-1">
+                                              <p className="font-medium text-sm">{index + 1}. {question.question}</p>
+                                              <p className="text-xs mt-1">
+                                                <span className="text-gray-500">Your answer: </span>
+                                                <span className={isCorrect ? 'text-green-700' : 'text-red-700'}>
+                                                  {userAnswer || '(not answered)'}
+                                                </span>
+                                              </p>
+                                              {!isCorrect && (
+                                                <p className="text-xs mt-1">
+                                                  <span className="text-gray-500">Correct answer: </span>
+                                                  <span className="text-green-700">
+                                                    {Array.isArray(question.correctAnswer)
+                                                      ? question.correctAnswer.join(', ')
+                                                      : question.correctAnswer}
+                                                  </span>
+                                                </p>
+                                              )}
+                                              <p className="text-xs text-gray-600 mt-2 italic">{question.explanation}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                  <Button
+                                    variant="outline"
+                                    onClick={resetAssessment}
+                                    className="flex-1"
+                                  >
+                                    Back to Assessments
+                                  </Button>
+                                  {assessmentResults.score < currentAssessment.passingScore && (
+                                    <Button
+                                      onClick={() => handleStartAssessment(currentAssessment)}
+                                      className="flex-1"
+                                    >
+                                      <RefreshCw className="h-4 w-4 mr-2" />
+                                      Try Again
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </CardContent>

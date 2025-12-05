@@ -42,7 +42,10 @@ export const users = pgTable("users", {
   totalXp: integer("total_xp").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_users_email").on(table.email),
+  index("IDX_users_skill_level").on(table.skillLevel),
+]);
 
 export const courses = pgTable("courses", {
   id: serial("id").primaryKey(),
@@ -54,7 +57,10 @@ export const courses = pgTable("courses", {
   category: varchar("category").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_courses_skill_level").on(table.skillLevel),
+  index("IDX_courses_category").on(table.category),
+]);
 
 export const learningPaths = pgTable("learning_paths", {
   id: serial("id").primaryKey(),
@@ -66,7 +72,9 @@ export const learningPaths = pgTable("learning_paths", {
   progress: real("progress").default(0), // percentage
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_learning_paths_user_id").on(table.userId),
+]);
 
 export const userCourses = pgTable("user_courses", {
   id: serial("id").primaryKey(),
@@ -77,7 +85,12 @@ export const userCourses = pgTable("user_courses", {
   startedAt: timestamp("started_at").defaultNow(),
   completedAt: timestamp("completed_at"),
   lastAccessedAt: timestamp("last_accessed_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_user_courses_user_id").on(table.userId),
+  index("IDX_user_courses_course_id").on(table.courseId),
+  index("IDX_user_courses_user_course").on(table.userId, table.courseId),
+  index("IDX_user_courses_is_completed").on(table.isCompleted),
+]);
 
 export const assessments = pgTable("assessments", {
   id: serial("id").primaryKey(),
@@ -91,7 +104,12 @@ export const assessments = pgTable("assessments", {
   score: real("score"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_assessments_user_id").on(table.userId),
+  index("IDX_assessments_course_id").on(table.courseId),
+  index("IDX_assessments_is_completed").on(table.isCompleted),
+  index("IDX_assessments_due_date").on(table.dueDate),
+]);
 
 export const recommendations = pgTable("recommendations", {
   id: serial("id").primaryKey(),
@@ -105,7 +123,10 @@ export const recommendations = pgTable("recommendations", {
   priority: integer("priority").default(1),
   isViewed: boolean("is_viewed").default(false),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_recommendations_user_id").on(table.userId),
+  index("IDX_recommendations_priority").on(table.priority),
+]);
 
 export const studyGroups = pgTable("study_groups", {
   id: serial("id").primaryKey(),
@@ -115,7 +136,9 @@ export const studyGroups = pgTable("study_groups", {
   memberCount: integer("member_count").default(0),
   maxMembers: integer("max_members").default(50),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_study_groups_course_id").on(table.courseId),
+]);
 
 export const studyGroupMembers = pgTable("study_group_members", {
   id: serial("id").primaryKey(),
@@ -123,7 +146,11 @@ export const studyGroupMembers = pgTable("study_group_members", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   role: varchar("role").default("member"), // member, admin
   joinedAt: timestamp("joined_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_study_group_members_group_id").on(table.groupId),
+  index("IDX_study_group_members_user_id").on(table.userId),
+  index("IDX_study_group_members_group_user").on(table.groupId, table.userId),
+]);
 
 export const aiTutorSessions = pgTable("ai_tutor_sessions", {
   id: serial("id").primaryKey(),
@@ -132,7 +159,9 @@ export const aiTutorSessions = pgTable("ai_tutor_sessions", {
   topic: varchar("topic"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_ai_tutor_sessions_user_id").on(table.userId),
+]);
 
 export const lessons = pgTable("lessons", {
   id: serial("id").primaryKey(),
@@ -151,7 +180,10 @@ export const lessons = pgTable("lessons", {
   courseId: integer("course_id").references(() => courses.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_lessons_course_id").on(table.courseId),
+  index("IDX_lessons_difficulty").on(table.difficulty),
+]);
 
 export const lessonProgress = pgTable("lesson_progress", {
   id: serial("id").primaryKey(),
@@ -163,7 +195,11 @@ export const lessonProgress = pgTable("lesson_progress", {
   lastPosition: integer("last_position").default(0), // in seconds
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_lesson_progress_user_id").on(table.userId),
+  index("IDX_lesson_progress_lesson_id").on(table.lessonId),
+  index("IDX_lesson_progress_user_lesson").on(table.userId, table.lessonId),
+]);
 
 export const lessonNotes = pgTable("lesson_notes", {
   id: serial("id").primaryKey(),
@@ -174,7 +210,11 @@ export const lessonNotes = pgTable("lesson_notes", {
   highlighted: boolean("highlighted").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_lesson_notes_user_id").on(table.userId),
+  index("IDX_lesson_notes_lesson_id").on(table.lessonId),
+  index("IDX_lesson_notes_user_lesson").on(table.userId, table.lessonId),
+]);
 
 export const lessonBookmarks = pgTable("lesson_bookmarks", {
   id: serial("id").primaryKey(),
@@ -183,7 +223,11 @@ export const lessonBookmarks = pgTable("lesson_bookmarks", {
   title: varchar("title").notNull(),
   position: integer("position").notNull(), // position in video/content
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_lesson_bookmarks_user_id").on(table.userId),
+  index("IDX_lesson_bookmarks_lesson_id").on(table.lessonId),
+  index("IDX_lesson_bookmarks_user_lesson").on(table.userId, table.lessonId),
+]);
 
 export const lessonAssessmentResults = pgTable("lesson_assessment_results", {
   id: serial("id").primaryKey(),
@@ -194,7 +238,11 @@ export const lessonAssessmentResults = pgTable("lesson_assessment_results", {
   answers: jsonb("answers"),
   timeSpent: integer("time_spent").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("IDX_lesson_assessment_results_user_id").on(table.userId),
+  index("IDX_lesson_assessment_results_lesson_id").on(table.lessonId),
+  index("IDX_lesson_assessment_results_user_lesson").on(table.userId, table.lessonId),
+]);
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({

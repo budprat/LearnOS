@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import rateLimit from "express-rate-limit";
@@ -9,7 +9,12 @@ import {
   generatePersonalizedRecommendations,
   generateAiTutorResponse,
   generateLearningPathSuggestions,
-  analyzeUserProgress
+  analyzeUserProgress,
+  detectLearningStyle,
+  analyzeSentiment,
+  generateAdaptiveQuestions,
+  predictLearningIntervention,
+  mapCompetencies
 } from "./openai";
 import {
   insertCourseSchema,
@@ -21,6 +26,20 @@ import {
   lessons
 } from "@shared/schema";
 import { db } from "./db";
+import {
+  zodValidate,
+  schemas,
+  sanitizeContent
+} from "./validation";
+
+// WebSocket client tracking
+interface WebSocketClient extends WebSocket {
+  userId?: string;
+  isAlive?: boolean;
+}
+
+// Map to track connected clients
+const connectedClients = new Map<string, WebSocketClient>();
 
 // Middleware to check authentication
 const isAuthenticated = async (req: any, res: any, next: any) => {
@@ -573,85 +592,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Advanced AI endpoints
-  app.post("/api/ai/detect-learning-style", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { interactionHistory = [], coursePreferences = [] } = req.body;
-      
-      const { detectLearningStyle } = await import("./openai");
-      const learningStyle = await detectLearningStyle(userId, interactionHistory, coursePreferences);
-      
-      res.json({ learningStyle });
-    } catch (error) {
-      console.error("Error detecting learning style:", error);
-      res.status(500).json({ message: "Failed to detect learning style" });
-    }
-  });
+  // Advanced AI endpoints with validation
+  app.post("/api/ai/detect-learning-style",
+    aiRateLimiter,
+    isAuthenticated,
+    zodValidate(schemas.detectLearningStyle, "body"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.id;
+        const { interactionHistory, coursePreferences } = req.validatedBody;
 
-  app.post("/api/ai/analyze-sentiment", isAuthenticated, async (req: any, res) => {
-    try {
-      const { messages = [], context = {} } = req.body;
-      
-      const { analyzeSentiment } = await import("./openai");
-      const emotionalState = await analyzeSentiment(messages, context);
-      
-      res.json({ emotionalState });
-    } catch (error) {
-      console.error("Error analyzing sentiment:", error);
-      res.status(500).json({ message: "Failed to analyze sentiment" });
-    }
-  });
+        const learningStyle = await detectLearningStyle(userId, interactionHistory, coursePreferences);
 
-  app.post("/api/ai/generate-adaptive-questions", isAuthenticated, async (req: any, res) => {
-    try {
-      const { topic, userLevel, previousAnswers = [], learningObjectives = [] } = req.body;
-      
-      const { generateAdaptiveQuestions } = await import("./openai");
-      const questions = await generateAdaptiveQuestions(topic, userLevel, previousAnswers, learningObjectives);
-      
-      res.json(questions);
-    } catch (error) {
-      console.error("Error generating adaptive questions:", error);
-      res.status(500).json({ message: "Failed to generate questions" });
+        res.json({ learningStyle });
+      } catch (error) {
+        console.error("Error detecting learning style:", error);
+        res.status(500).json({ message: "Failed to detect learning style" });
+      }
     }
-  });
+  );
 
-  app.post("/api/ai/predict-intervention", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { progressData = {}, engagementMetrics = {}, assessmentHistory = [] } = req.body;
-      
-      const { predictLearningIntervention } = await import("./openai");
-      const intervention = await predictLearningIntervention(userId, progressData, engagementMetrics, assessmentHistory);
-      
-      res.json(intervention);
-    } catch (error) {
-      console.error("Error predicting intervention:", error);
-      res.status(500).json({ message: "Failed to predict intervention" });
-    }
-  });
+  app.post("/api/ai/analyze-sentiment",
+    aiRateLimiter,
+    isAuthenticated,
+    zodValidate(schemas.analyzeSentiment, "body"),
+    async (req: any, res) => {
+      try {
+        const { messages, context } = req.validatedBody;
 
-  app.get("/api/ai/competency-map", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const targetRole = req.query.targetRole as string;
-      
-      const userCourses = await storage.getUserCourses(userId);
-      const assessments = await storage.getUserAssessments(userId);
-      const completedCourses = userCourses
-        .filter(uc => uc.completedAt)
-        .map(uc => uc.course);
-      
-      const { mapCompetencies } = await import("./openai");
-      const competencyMap = await mapCompetencies(userId, completedCourses, assessments, targetRole);
-      
-      res.json(competencyMap);
-    } catch (error) {
-      console.error("Error mapping competencies:", error);
-      res.status(500).json({ message: "Failed to map competencies" });
+        const emotionalState = await analyzeSentiment(messages, context);
+
+        res.json({ emotionalState });
+      } catch (error) {
+        console.error("Error analyzing sentiment:", error);
+        res.status(500).json({ message: "Failed to analyze sentiment" });
+      }
     }
-  });
+  );
+
+  app.post("/api/ai/generate-adaptive-questions",
+    aiRateLimiter,
+    isAuthenticated,
+    zodValidate(schemas.generateAdaptiveQuestions, "body"),
+    async (req: any, res) => {
+      try {
+        const { topic, userLevel, previousAnswers, learningObjectives } = req.validatedBody;
+
+        const questions = await generateAdaptiveQuestions(topic, userLevel, previousAnswers, learningObjectives);
+
+        res.json(questions);
+      } catch (error) {
+        console.error("Error generating adaptive questions:", error);
+        res.status(500).json({ message: "Failed to generate questions" });
+      }
+    }
+  );
+
+  app.post("/api/ai/predict-intervention",
+    aiRateLimiter,
+    isAuthenticated,
+    zodValidate(schemas.predictIntervention, "body"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.id;
+        const { progressData, engagementMetrics, assessmentHistory } = req.validatedBody;
+
+        const intervention = await predictLearningIntervention(userId, progressData, engagementMetrics, assessmentHistory);
+
+        res.json(intervention);
+      } catch (error) {
+        console.error("Error predicting intervention:", error);
+        res.status(500).json({ message: "Failed to predict intervention" });
+      }
+    }
+  );
+
+  app.get("/api/ai/competency-map",
+    aiRateLimiter,
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.user.id;
+        const targetRole = req.query.targetRole as string;
+
+        const userCourses = await storage.getUserCourses(userId);
+        const assessments = await storage.getUserAssessments(userId);
+        const completedCourses = userCourses
+          .filter(uc => uc.completedAt)
+          .map(uc => uc.course);
+
+        const competencyMap = await mapCompetencies(userId, completedCourses, assessments, targetRole);
+
+        res.json(competencyMap);
+      } catch (error) {
+        console.error("Error mapping competencies:", error);
+        res.status(500).json({ message: "Failed to map competencies" });
+      }
+    }
+  );
 
   // Gamification endpoints
   app.get("/api/gamification/achievements", isAuthenticated, async (req: any, res) => {
@@ -869,36 +907,361 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lesson Assessment Submission endpoint
+  app.post('/api/lessons/:id/assessments/:assessmentId/submit',
+    isAuthenticated,
+    zodValidate(schemas.submitLessonAssessment, "body"),
+    async (req: any, res: any) => {
+      try {
+        const lessonId = parseInt(req.params.id);
+        const assessmentIdParam = req.params.assessmentId;
+        const userId = req.user.id;
+        const { assessmentId, score, answers, timeSpent } = req.validatedBody;
+
+        // Get the lesson to validate assessment exists
+        const lesson = await storage.getLesson(lessonId);
+        if (!lesson) {
+          return res.status(404).json({ message: "Lesson not found" });
+        }
+
+        // Store the assessment result
+        const result = await storage.createLessonAssessmentResult({
+          userId,
+          lessonId,
+          assessmentId: assessmentIdParam || assessmentId,
+          score,
+          answers,
+          timeSpent
+        });
+
+        // Update user XP based on score
+        const user = await storage.getUser(userId);
+        if (user) {
+          const xpGained = Math.round(score * 0.5); // 0.5 XP per score point
+          await storage.updateUserStats(userId, {
+            totalXp: (user.totalXp || 0) + xpGained
+          });
+        }
+
+        // Broadcast score update via WebSocket if client is connected
+        const client = connectedClients.get(userId);
+        if (client && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'assessment-completed',
+            lessonId,
+            assessmentId: assessmentIdParam || assessmentId,
+            score,
+            xpGained: Math.round(score * 0.5)
+          }));
+        }
+
+        res.status(201).json({
+          ...result,
+          passed: score >= 70, // 70% passing threshold
+          xpGained: Math.round(score * 0.5)
+        });
+      } catch (error) {
+        console.error("Error submitting lesson assessment:", error);
+        res.status(500).json({ message: "Failed to submit assessment" });
+      }
+    }
+  );
+
+  // Get lesson assessment results
+  app.get('/api/lessons/:id/assessments/results', isAuthenticated, async (req: any, res: any) => {
+    try {
+      const lessonId = parseInt(req.params.id);
+      const userId = req.user.id;
+      const results = await storage.getUserLessonAssessmentResults(userId, lessonId);
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching assessment results:", error);
+      res.status(500).json({ message: "Failed to fetch assessment results" });
+    }
+  });
+
   const httpServer = createServer(app);
 
-  // WebSocket setup for real-time features
+  // ============================================
+  // COMPLETE WEBSOCKET IMPLEMENTATION
+  // ============================================
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
-  wss.on('connection', (ws: WebSocket) => {
-    console.log('New WebSocket connection');
+  // Heartbeat interval to detect dead connections
+  const heartbeatInterval = setInterval(() => {
+    wss.clients.forEach((ws) => {
+      const client = ws as WebSocketClient;
+      if (client.isAlive === false) {
+        // Remove from connected clients
+        if (client.userId) {
+          connectedClients.delete(client.userId);
+        }
+        return client.terminate();
+      }
+      client.isAlive = false;
+      client.ping();
+    });
+  }, 30000);
 
-    ws.on('message', async (message) => {
+  wss.on('close', () => {
+    clearInterval(heartbeatInterval);
+  });
+
+  wss.on('connection', async (ws: WebSocket, req) => {
+    const client = ws as WebSocketClient;
+    client.isAlive = true;
+
+    console.log('New WebSocket connection established');
+
+    // Handle pong response for heartbeat
+    client.on('pong', () => {
+      client.isAlive = true;
+    });
+
+    client.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
-        
-        if (data.type === 'ai-tutor-message') {
-          // Handle real-time AI tutor messages
-          const { userId, message: userMessage } = data;
-          // Process AI tutor response and send back
-          ws.send(JSON.stringify({
-            type: 'ai-tutor-response',
-            message: 'Processing your question...'
-          }));
+
+        switch (data.type) {
+          case 'authenticate': {
+            // Authenticate the WebSocket connection
+            const { token } = data;
+            if (!token) {
+              client.send(JSON.stringify({
+                type: 'error',
+                message: 'Authentication token required'
+              }));
+              return;
+            }
+
+            try {
+              const { data: { user }, error } = await supabase.auth.getUser(token);
+              if (error || !user) {
+                client.send(JSON.stringify({
+                  type: 'error',
+                  message: 'Invalid authentication token'
+                }));
+                return;
+              }
+
+              client.userId = user.id;
+              connectedClients.set(user.id, client);
+
+              client.send(JSON.stringify({
+                type: 'authenticated',
+                userId: user.id,
+                message: 'Successfully connected'
+              }));
+
+              console.log(`User ${user.id} authenticated via WebSocket`);
+            } catch (authError) {
+              client.send(JSON.stringify({
+                type: 'error',
+                message: 'Authentication failed'
+              }));
+            }
+            break;
+          }
+
+          case 'ai-tutor-message': {
+            // Handle real-time AI tutor messages
+            if (!client.userId) {
+              client.send(JSON.stringify({
+                type: 'error',
+                message: 'Not authenticated'
+              }));
+              return;
+            }
+
+            const { message: userMessage, sessionId } = data;
+
+            // Send processing indicator
+            client.send(JSON.stringify({
+              type: 'ai-tutor-typing',
+              isTyping: true
+            }));
+
+            try {
+              const user = await storage.getUser(client.userId);
+              if (!user) {
+                throw new Error('User not found');
+              }
+
+              // Get or create session
+              let session;
+              if (sessionId) {
+                const sessions = await storage.getUserAiTutorSessions(client.userId);
+                session = sessions.find(s => s.id === parseInt(sessionId));
+              }
+
+              const messages = session?.messages as any[] || [];
+              messages.push({ role: "user", content: userMessage });
+
+              // Generate AI response
+              const aiResponse = await generateAiTutorResponse(messages, {
+                skillLevel: user.skillLevel,
+                learningProgress: await storage.getUserCourses(client.userId)
+              });
+
+              messages.push({ role: "assistant", content: aiResponse });
+
+              // Save session
+              if (session) {
+                session = await storage.updateAiTutorSession(session.id, { messages });
+              } else {
+                session = await storage.createAiTutorSession({
+                  userId: client.userId,
+                  messages,
+                  topic: userMessage.substring(0, 100)
+                });
+              }
+
+              // Send response
+              client.send(JSON.stringify({
+                type: 'ai-tutor-response',
+                response: aiResponse,
+                sessionId: session.id
+              }));
+
+              // Stop typing indicator
+              client.send(JSON.stringify({
+                type: 'ai-tutor-typing',
+                isTyping: false
+              }));
+
+            } catch (aiError) {
+              console.error('AI tutor error:', aiError);
+              client.send(JSON.stringify({
+                type: 'ai-tutor-error',
+                message: 'Failed to process your request. Please try again.'
+              }));
+              client.send(JSON.stringify({
+                type: 'ai-tutor-typing',
+                isTyping: false
+              }));
+            }
+            break;
+          }
+
+          case 'lesson-progress': {
+            // Handle real-time lesson progress updates
+            if (!client.userId) {
+              client.send(JSON.stringify({
+                type: 'error',
+                message: 'Not authenticated'
+              }));
+              return;
+            }
+
+            const { lessonId, progress, timeSpent, lastPosition } = data;
+
+            try {
+              const existingProgress = await storage.getUserLessonProgress(client.userId, lessonId);
+
+              if (existingProgress) {
+                await storage.updateLessonProgress(existingProgress.id, {
+                  progress,
+                  timeSpent: (existingProgress.timeSpent || 0) + (timeSpent || 0),
+                  lastPosition
+                });
+              } else {
+                await storage.createLessonProgress({
+                  userId: client.userId,
+                  lessonId,
+                  progress,
+                  timeSpent,
+                  lastPosition
+                });
+              }
+
+              client.send(JSON.stringify({
+                type: 'progress-saved',
+                lessonId,
+                progress
+              }));
+            } catch (progressError) {
+              console.error('Progress save error:', progressError);
+            }
+            break;
+          }
+
+          case 'study-group-message': {
+            // Handle study group real-time messaging
+            if (!client.userId) {
+              client.send(JSON.stringify({
+                type: 'error',
+                message: 'Not authenticated'
+              }));
+              return;
+            }
+
+            const { groupId, message: groupMessage } = data;
+
+            // Broadcast to all connected members of the study group
+            // Note: In production, you'd want to track group memberships
+            wss.clients.forEach((wsClient) => {
+              const c = wsClient as WebSocketClient;
+              if (c.readyState === WebSocket.OPEN && c.userId) {
+                c.send(JSON.stringify({
+                  type: 'study-group-message',
+                  groupId,
+                  senderId: client.userId,
+                  message: sanitizeContent(groupMessage),
+                  timestamp: new Date().toISOString()
+                }));
+              }
+            });
+            break;
+          }
+
+          case 'ping': {
+            // Handle ping for connection check
+            client.send(JSON.stringify({ type: 'pong' }));
+            break;
+          }
+
+          default: {
+            client.send(JSON.stringify({
+              type: 'error',
+              message: `Unknown message type: ${data.type}`
+            }));
+          }
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
+        client.send(JSON.stringify({
+          type: 'error',
+          message: 'Failed to process message'
+        }));
       }
     });
 
-    ws.on('close', () => {
+    client.on('close', () => {
       console.log('WebSocket connection closed');
+      if (client.userId) {
+        connectedClients.delete(client.userId);
+        console.log(`User ${client.userId} disconnected`);
+      }
+    });
+
+    client.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      if (client.userId) {
+        connectedClients.delete(client.userId);
+      }
     });
   });
+
+  // Helper function to send notifications to specific user
+  (app as any).sendNotification = (userId: string, notification: any) => {
+    const client = connectedClients.get(userId);
+    if (client && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'notification',
+        ...notification
+      }));
+    }
+  };
 
   return httpServer;
 }
